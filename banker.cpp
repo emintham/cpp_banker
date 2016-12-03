@@ -65,7 +65,7 @@ public:
   bool isBankrupt();
 
 private:
-  float heuristicScore();
+  int heuristicScore();
   vector<tuple<int, int>> getMoveset();
 };
 
@@ -88,13 +88,16 @@ bool Board::isBankrupt() {
   return cash < 0;
 }
 
-float Board::heuristicScore() {
+int Board::heuristicScore() {
   if (this->isBankrupt()) return BANKRUPT;
 
-  float heuristicScore = score + cash;
+  // float heuristicScore = score + cash;
+  int heuristicScore = (score + cash) >> 2;
 
+  /*
   const int edges[12] = {1, 2, 3, 5, 9, 10, 14, 15, 19, 21, 22, 23};
   const int centers[9] = {6, 7, 8, 11, 12, 13, 16, 17, 18};
+  */
 
   for (const tuple<int, int> &move : this->getMoveset()) {
     int s, d;
@@ -102,11 +105,12 @@ float Board::heuristicScore() {
 
     int diff = abs(s - d);
     int dist = diff/5 + diff%5;
-    int val = board[s];
+    int val = dist > 1 ? board[s] : 1;
 
-    heuristicScore += dist > 1 ? (val * dist) : val;
+    heuristicScore += val << (dist - 1);
   }
 
+  /*
   // Corners
   if (this->isCompetitor(0)) heuristicScore -= CORNER_PENALTY;
   if (this->isCompetitor(4)) heuristicScore -= CORNER_PENALTY;
@@ -125,6 +129,7 @@ float Board::heuristicScore() {
       heuristicScore += board[cost];
     }
   }
+  */
 
   return heuristicScore;
 }
@@ -183,13 +188,19 @@ Board* Board::move(int source, int dest, int nextTile) {
 
   Board* newBoard = new Board(*this);
 
+  int destroyedCompetitors = 0;
   for (int i=1; i<dist; i++) {
     int pos = horizontalMove ? start + i : (start + i*5);
 
     if (newBoard->isCompetitor(pos) && newBoard->board[pos] < 0 && sourceTile + newBoard->board[pos] > 0) {
       newBoard->board[pos] = 0;
       newBoard->competitors[pos] = false;
+      destroyedCompetitors++;
     }
+  }
+
+  if (destroyedCompetitors > 1) {
+    newBoard->score += 1 << destroyedCompetitors;
   }
 
   newBoard->board[source] = newSource;
@@ -333,6 +344,11 @@ int main() {
     clock_t t = clock();  // Start recording
 
     score = b->bestMove(nextTile, depth, &source, &dest);
+
+    if (source < 0 || dest < 0) {
+      cout << "Failed!" << endl;
+      break;
+    }
 
     t = clock() - t;      // End recording
 
