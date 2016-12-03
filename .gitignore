@@ -1,0 +1,5 @@
+banker
+banker.dSYM
+callgrind*
+*.swp
+*.swo
