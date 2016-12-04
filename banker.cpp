@@ -1,7 +1,9 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <set>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -9,9 +11,14 @@
 
 using namespace std;
 
+// Globals
+int reusedValues = 0;
+bool markReuse = false;
+
+// Constants
 const int CORNER_PENALTY = 30;
 const int EDGE_PENALTY = 10;
-const float BANKRUPT = -10000.0;
+const int BANKRUPT = -1024;
 
 const int possibleDest[25][8] = {
   {1, 2, 3, 4, 5, 10, 15, 20}, // 0
@@ -41,6 +48,9 @@ const int possibleDest[25][8] = {
   {4, 9, 14, 19, 20, 21, 22, 23}  // 24
 };
 
+typedef map<int, int> HeuristicCache;
+HeuristicCache hc;
+
 class Board {
 
 public:
@@ -50,6 +60,7 @@ public:
                           0, 0, 0, 0, 0,
                           0, 0, 0, 0, 0};
   bool competitors[25] = {false};
+  int competitorTimers[25] = {0};
   int moves = 0;
   int score = 10;
   int cash = 10;
@@ -63,16 +74,67 @@ public:
   static float EMM(Board* board, int depth);
   float competitorCosts();
   bool isBankrupt();
+  void addCompetitor(int pos, int value);
+  void clearCompetitor(int pos);
 
 private:
   int heuristicScore();
   vector<tuple<int, int>> getMoveset();
+  void updateTimer();
 };
 
+int hashBoard(const Board &b) {
+  int h = 25;
+  for (int i=0; i<25; i++) {
+    h = h * 17 + b.board[i];
+  }
+
+  return h;
+}
+
 void Board::print() {
-  for (int i=0; i<25; i+=5) {
-    cout << board[i] << " " << board[i+1] << " " << board[i+2] << " ";
-    cout << board[i+3] << " " << board[i+4] << endl;
+  for (int i=0; i<25; i++) {
+    if (i != 0 && i % 5 == 0) {
+      cout << endl;
+    }
+
+    if (competitors[i]) {
+      if (board[i] == 0) {
+        cout << "( 0)";
+      } else {
+        cout << "(" << board[i] << ")";
+      }
+    } else {
+      cout << "  " << board[i] << " ";
+    }
+  }
+
+  cout << endl;
+}
+
+void Board::addCompetitor(int pos, int value) {
+  board[pos] = value;
+  competitors[pos] = true;
+  competitorTimers[pos] = 20;
+}
+
+void Board::clearCompetitor(int pos) {
+  board[pos] = 0;
+  competitors[pos] = false;
+  competitorTimers[pos] = 0;
+}
+
+void Board::updateTimer() {
+  for (int i=0; i<25; i++) {
+    if (!competitors[i]) continue;
+
+    if (!competitorTimers[i]) {
+      board[i]--;
+      competitorTimers[i] = 20;
+      continue;
+    }
+
+    competitorTimers[i]--;
   }
 }
 
@@ -89,10 +151,21 @@ bool Board::isBankrupt() {
 }
 
 int Board::heuristicScore() {
-  if (this->isBankrupt()) return BANKRUPT;
+  int heuristicScore = 0;
 
-  // float heuristicScore = score + cash;
-  int heuristicScore = (score + cash) >> 2;
+  // Look for it in cache
+  int key = hashBoard(*this);
+  map<int, int>::iterator it = hc.find(key);
+
+  if (it != hc.end()) {
+    if (markReuse) {
+      reusedValues++;
+    }
+    return it->second + cash;
+  }
+
+  // Bankruptcy is not related to board position, don't cache
+  if (this->isBankrupt()) return BANKRUPT;
 
   /*
   const int edges[12] = {1, 2, 3, 5, 9, 10, 14, 15, 19, 21, 22, 23};
@@ -107,7 +180,7 @@ int Board::heuristicScore() {
     int dist = diff/5 + diff%5;
     int val = dist > 1 ? board[s] : 1;
 
-    heuristicScore += val << (dist - 1);
+    heuristicScore += val + (1 << (dist - 1));
   }
 
   /*
@@ -131,7 +204,10 @@ int Board::heuristicScore() {
   }
   */
 
-  return heuristicScore;
+  // Add to hashtable
+  hc[key] = heuristicScore;
+
+  return heuristicScore + cash;
 }
 
 float Board::competitorCosts() {
@@ -200,17 +276,21 @@ Board* Board::move(int source, int dest, int nextTile) {
   }
 
   if (destroyedCompetitors > 1) {
-    newBoard->score += 1 << destroyedCompetitors;
+    int delta = 1 << destroyedCompetitors;
+    newBoard->score += delta;
+    newBoard->cash += delta;
   }
+
+  newBoard->cash += newBoard->competitorCosts() + cashDelta;
 
   newBoard->board[source] = newSource;
   newBoard->board[dest] = newDest;
 
   if (dist == 1 && nextTile <= 0) {
-    newBoard->competitors[source] = true;
+    newBoard->addCompetitor(source, nextTile);
+    newBoard->updateTimer();
   }
 
-  newBoard->cash += newBoard->competitorCosts() + cashDelta;
   newBoard->score += scoreDelta;
   newBoard->moves++;
 
@@ -329,10 +409,28 @@ float Board::EMM(Board* board, int depth) {
   return expectedMaxScore;
 }
 
-int main() {
+void printMove(int source, int dest) {
+  for (int i=0; i<25; i++) {
+    if (i != 0 && i % 5 == 0) {
+      cout << endl;
+    }
 
-  int nextTile, source, dest;
+    if (i == source) {
+      cout << "A ";
+    } else if (i == dest) {
+      cout << "B ";
+    } else {
+      cout << "+ ";
+    }
+  }
+  cout << endl;
+}
+
+void solveBestMove() {
+  int nextTile;
   float score;
+  int source = -1;
+  int dest = -1;
   int depth = 6;
 
   Board* b = new Board();
@@ -340,6 +438,10 @@ int main() {
   while (scanf("%d", &nextTile) != EOF) {
 
     retry: // FOR GOTO
+
+    if (markReuse) {
+      reusedValues = 0;
+    }
 
     clock_t t = clock();  // Start recording
 
@@ -355,10 +457,18 @@ int main() {
     Board* newBoard = b->move(source, dest, nextTile);
 
     cout << "Next tile: " << nextTile << endl;
-    cout << "Source: " << source << ", " << "Dest: " << dest;
-    cout << ", Score: " << newBoard->score << ", Cash: " << newBoard->cash;
+    cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash;
     cout << endl;
-    cout << "Heuristic: " << score << endl;
+    cout << "Heuristic: " << score;
+
+    if (markReuse) {
+      cout << ", " << "Reused values: " << reusedValues;
+    }
+    cout << endl;
+
+    printMove(source, dest);
+
+    cout << string(50, '-') << endl;
 
     newBoard->print();
 
@@ -372,6 +482,119 @@ int main() {
 
     if (dist > 1) goto retry;
   }
+
+}
+
+int getRandomTile(int score) {
+  int tiles[8] = {2, 1, 0, -1, -2, -3, -4, -5};
+  float distribution[3][8] = {
+    {0.35, 0.35, 0.20, 0.09, 0.01, 0.00, 0.00, 0.00},
+    {0.23, 0.27, 0.23, 0.09, 0.09, 0.09, 0.00, 0.00},
+    {0.21, 0.23, 0.27, 0.01, 0.09, 0.09, 0.09, 0.01}
+  };
+
+  float p = (rand()/static_cast<float>(RAND_MAX));
+  float *prob_ptr = &distribution[0][0];
+  int *tile_ptr = &tiles[0];
+  int *end = tiles + 8;
+
+  if (score <= 300) {
+    // do nothing
+  } else if (score <= 600) {
+    prob_ptr += 8;
+  } else {
+    prob_ptr += 16;
+  }
+
+  while((p -= *prob_ptr) > 0) {
+    ++prob_ptr;
+    ++tile_ptr;
+  }
+
+  if (tile_ptr > end) {
+    cout << "DEBUG: past end of array!" << endl;
+    return 0;
+  }
+
+  return *tile_ptr;
+}
+
+void getMaxScore() {
+  Board *b = new Board();
+  int sumScore = 0;
+  int runs = 0;
+  int score = 0;
+  int source = -1;
+  int dest = -1;
+  int depth = 6;
+  int maxRuns = 5;
+
+  while (true) {
+    if (runs >= maxRuns) break;
+
+    int nextTile = getRandomTile(b->score);
+
+    retry: // FOR GOTO
+
+    if (markReuse) {
+      reusedValues = 0;
+    }
+
+    clock_t t = clock();  // Start recording
+
+    score = b->bestMove(nextTile, depth, &source, &dest);
+
+    if (score < 0) {
+      b->print();
+      break;
+    }
+
+    if (source < 0 || dest < 0 || b->cash < 0) {
+      runs++;
+      sumScore += b->score;
+
+      delete b;
+      b = new Board();
+
+      continue;
+    }
+
+    t = clock() - t;      // End recording
+
+    Board* newBoard = b->move(source, dest, nextTile);
+
+    cout << "Source: " << source << ", Dest: " << dest << endl;
+    cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash;
+    cout << endl;
+    cout << "Heuristic: " << score;
+
+    if (markReuse) {
+      cout << ", " << "Reused values: " << reusedValues;
+    }
+    cout << endl;
+
+    cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << endl << endl;
+
+    delete b;
+    b = newBoard;
+
+    int diff = abs(source - dest);
+    int dist = diff/5 + diff%5;
+
+    if (dist > 1) goto retry;
+
+  }
+
+  if (runs) {
+    cout << "Average score across " << runs << " runs: ";
+    cout << (float)sumScore/(float)runs << endl;
+  }
+}
+
+int main() {
+
+  // solveBestMove();
+  getMaxScore();
 
   return 0;
 
