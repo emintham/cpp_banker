@@ -8,7 +8,7 @@
 using namespace std;
 
 void Board::print() {
-  for (int i=0; i<25; i++) {
+  for (int i=0; i<BOARD_SIZE; i++) {
     if (i != 0 && i % 5 == 0) {
       cout << endl;
     }
@@ -28,7 +28,7 @@ void Board::print() {
 }
 
 void Board::printMove(int source, int dest) {
-  for (int i=0; i<25; i++) {
+  for (int i=0; i<BOARD_SIZE; i++) {
     if (i != 0 && i % 5 == 0) {
       cout << endl;
     }
@@ -60,7 +60,7 @@ bool Board::isBankrupt() {
 float Board::competitorCosts() {
   float total= 0.0;
 
-  for (int i=0; i<25; i++) {
+  for (int i=0; i<BOARD_SIZE; i++) {
     int value = board[i];
 
     if (value < 0) {
@@ -74,7 +74,7 @@ float Board::competitorCosts() {
 vector<tuple<int, int>> Board::getMoveset() {
   vector<tuple<int, int>> allPossibleMoves;
 
-  for (int i=0; i<25; i++) {
+  for (int i=0; i<BOARD_SIZE; i++) {
     if (board[i] <= 0) continue;
 
     for (const int& j : possibleDest[i]) {
@@ -109,7 +109,7 @@ void Board::clearCompetitor(int pos) {
 }
 
 void Board::updateTimer() {
-  for (int i=0; i<25; i++) {
+  for (int i=0; i<BOARD_SIZE; i++) {
     if (!competitors[i]) continue;
 
     if (!competitorTimers[i]) {

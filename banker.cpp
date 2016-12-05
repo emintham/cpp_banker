@@ -1,5 +1,3 @@
-#include "board.h"
-#include "constants.h"
 #include "emm.h"
 
 int main() {

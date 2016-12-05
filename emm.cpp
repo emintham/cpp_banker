@@ -20,8 +20,8 @@ typedef map<int, int> HeuristicCache;
 static HeuristicCache hc;
 
 int hashBoard(const Board &b) {
-  int h = 25;
-  for (int i=0; i<25; i++) {
+  int h = BOARD_SIZE;
+  for (int i=0; i<BOARD_SIZE; i++) {
     h = h * 17 + b.board[i];
   }
 
@@ -88,24 +88,17 @@ void EMM::solveBestMove() {
 }
 
 int EMM::getRandomTile(int score) {
-  int tiles[8] = {2, 1, 0, -1, -2, -3, -4, -5};
-  float distribution[3][8] = {
-    {0.35, 0.35, 0.20, 0.09, 0.01, 0.00, 0.00, 0.00},
-    {0.23, 0.27, 0.23, 0.09, 0.09, 0.09, 0.00, 0.00},
-    {0.21, 0.23, 0.27, 0.01, 0.09, 0.09, 0.09, 0.01}
-  };
-
   float p = (rand()/static_cast<float>(RAND_MAX));
-  float *prob_ptr = &distribution[0][0];
-  int *tile_ptr = &tiles[0];
-  int *end = tiles + 8;
+  const float *prob_ptr = &DISTRIBUTION[0][0];
+  const int *tile_ptr = &TILES[0];
+  const int *end = TILES + TILE_TYPES;
 
   if (score <= 300) {
     // do nothing
   } else if (score <= 600) {
-    prob_ptr += 8;
+    prob_ptr += TILE_TYPES;
   } else {
-    prob_ptr += 16;
+    prob_ptr += TILE_TYPES << 1;
   }
 
   while((p -= *prob_ptr) > 0) {
@@ -301,39 +294,24 @@ float EMM::expectiminimax(Board* board, int depth) {
   if (board->isBankrupt()) return BANKRUPT;
 
   int score = board->score;
-  vector<pair<int, float>> tileWithProbabilities;
+  int j = 0;
 
   if (board->score <= 300) {
-    tileWithProbabilities.push_back(make_pair(2, 0.35));
-    tileWithProbabilities.push_back(make_pair(1, 0.35));
-    tileWithProbabilities.push_back(make_pair(0, 0.2));
-    tileWithProbabilities.push_back(make_pair(-1, 0.09));
-    tileWithProbabilities.push_back(make_pair(-2, 0.01));
+    // Do nothing
   } else if (board->score <= 500) {
-    tileWithProbabilities.push_back(make_pair(2, 0.23));
-    tileWithProbabilities.push_back(make_pair(1, 0.27));
-    tileWithProbabilities.push_back(make_pair(0, 0.23));
-    tileWithProbabilities.push_back(make_pair(-1, 0.09));
-    tileWithProbabilities.push_back(make_pair(-2, 0.09));
-    tileWithProbabilities.push_back(make_pair(-3, 0.09));
+    j = 1;
   } else {
-    tileWithProbabilities.push_back(make_pair(2, 0.21));
-    tileWithProbabilities.push_back(make_pair(1, 0.23));
-    tileWithProbabilities.push_back(make_pair(0, 0.27));
-    tileWithProbabilities.push_back(make_pair(-1, 0.01));
-    tileWithProbabilities.push_back(make_pair(-2, 0.09));
-    tileWithProbabilities.push_back(make_pair(-3, 0.09));
-    tileWithProbabilities.push_back(make_pair(-4, 0.09));
-    tileWithProbabilities.push_back(make_pair(-5, 0.01));
+    j = 2;
   }
 
   float expectedMaxScore = 0.0;
-  for (const pair<int, float> &tileProbabilityPair : tileWithProbabilities) {
-    int tile, source, dest;
-    float probability, heuristicScore;
-    tie(tile, probability) = tileProbabilityPair;
+  for (int i=0; i<TILE_TYPES; i++) {
+    int source, dest;
 
-    heuristicScore = EMM::bestMove(board, tile, depth-1, &source, &dest);
+    int tile = TILES[i];
+    float probability = DISTRIBUTION[j][i];
+
+    float heuristicScore = EMM::bestMove(board, tile, depth-1, &source, &dest);
 
     expectedMaxScore += heuristicScore * probability;
   }

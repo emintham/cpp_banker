@@ -1,11 +1,14 @@
 #ifndef __CONSTANTS_H__
 #define __CONSTANTS_H__
 
+const int TILE_TYPES = 8;
+const int BOARD_SIZE = 25;
+
 const int CORNER_PENALTY = 30;
 const int EDGE_PENALTY = 10;
 const int BANKRUPT = -1024;
 
-const int possibleDest[25][8] = {
+const int possibleDest[BOARD_SIZE][8] = {
   {1, 2, 3, 4, 5, 10, 15, 20}, // 0
   {0, 2, 3, 4, 6, 11, 16, 21}, // 1
   {0, 1, 3, 4, 7, 12, 17, 22}, // 2
@@ -31,6 +34,13 @@ const int possibleDest[25][8] = {
   {2, 7, 12, 17, 20, 21, 23, 24}, // 22
   {3, 8, 13, 18, 20, 21, 22, 24}, // 23
   {4, 9, 14, 19, 20, 21, 22, 23}  // 24
+};
+
+const int TILES[8] = {2, 1, 0, -1, -2, -3, -4, -5};
+const float DISTRIBUTION[3][8] = {
+  {0.35, 0.35, 0.20, 0.09, 0.01, 0.00, 0.00, 0.00},
+  {0.23, 0.27, 0.23, 0.09, 0.09, 0.09, 0.00, 0.00},
+  {0.21, 0.23, 0.27, 0.01, 0.09, 0.09, 0.09, 0.01}
 };
 
 #endif

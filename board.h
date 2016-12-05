@@ -5,16 +5,18 @@
 #include <tuple>
 #include <vector>
 
+#include "constants.h"
+
 class Board {
 
 public:
-  std::array<int, 25> board = {0, 0, 0, 0, 0,
-                               0, 0, 0, 0, 0,
-                               0, 0, 1, 0, 0,
-                               0, 0, 0, 0, 0,
-                               0, 0, 0, 0, 0};
-  bool competitors[25] = {false};
-  int competitorTimers[25] = {0};
+  std::array<int, BOARD_SIZE> board = {0, 0, 0, 0, 0,
+                                       0, 0, 0, 0, 0,
+                                       0, 0, 1, 0, 0,
+                                       0, 0, 0, 0, 0,
+                                       0, 0, 0, 0, 0};
+  bool competitors[BOARD_SIZE] = {false};
+  int competitorTimers[BOARD_SIZE] = {0};
   int moves = 0;
   int score = 10;
   int cash = 10;
