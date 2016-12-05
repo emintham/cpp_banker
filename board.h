@@ -19,10 +19,6 @@ public:
   int score = 10;
   int cash = 10;
 
-  // expectiminimax member variables
-  static bool markReuse;
-  static int reusedValues;
-
   // ----- Methods ----------
   // Util methods
   void print();
@@ -32,15 +28,12 @@ public:
   float competitorCosts();
   std::vector<std::tuple<int, int>> getMoveset();
 
+  static void printMove(int source, int dest);
+
   // Board modifying methods
   void addCompetitor(int pos, int value);
   void clearCompetitor(int pos);
   Board* move(int source, int dest, int nextTile);
-
-  // expectiminimax methods
-  int heuristicScore();
-  float bestMove(int nextTile, int depth, int* source, int* dest);
-  static float EMM(Board* board, int depth);
 
 private:
   void updateTimer();
