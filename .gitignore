@@ -3,3 +3,4 @@ banker.dSYM
 callgrind*
 *.swp
 *.swo
+*.o
