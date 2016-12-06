@@ -1,5 +1,6 @@
 #include <iostream>
 #include <map>
+#include <stack>
 #include <tuple>
 #include <vector>
 
@@ -87,33 +88,6 @@ void EMM::solveBestMove() {
 
 }
 
-int EMM::getRandomTile(int score) {
-  float p = (rand()/static_cast<float>(RAND_MAX));
-  const float *prob_ptr = &DISTRIBUTION[0][0];
-  const int *tile_ptr = &TILES[0];
-  const int *end = TILES + TILE_TYPES;
-
-  if (score <= 300) {
-    // do nothing
-  } else if (score <= 600) {
-    prob_ptr += TILE_TYPES;
-  } else {
-    prob_ptr += TILE_TYPES << 1;
-  }
-
-  while((p -= *prob_ptr) > 0) {
-    ++prob_ptr;
-    ++tile_ptr;
-  }
-
-  if (tile_ptr > end) {
-    cout << "DEBUG: past end of array!" << endl;
-    return 0;
-  }
-
-  return *tile_ptr;
-}
-
 void EMM::getMaxScore() {
   Board *b = new Board();
 
@@ -128,7 +102,7 @@ void EMM::getMaxScore() {
   while (true) {
     if (runs >= maxRuns) break;
 
-    int nextTile = getRandomTile(b->score);
+    int nextTile = Board::getRandomTile(b->score);
 
     retry: // FOR GOTO
 
@@ -169,6 +143,8 @@ void EMM::getMaxScore() {
     }
     cout << endl;
 
+    b->print();
+
     cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << endl << endl;
 
     delete b;
@@ -190,6 +166,7 @@ void EMM::getMaxScore() {
 int EMM::heuristicScore(Board *b) {
   int heuristicScore = 0;
 
+  /*
   // Look for it in cache
   int key = hashBoard(*b);
   map<int, int>::iterator it = hc.find(key);
@@ -198,53 +175,20 @@ int EMM::heuristicScore(Board *b) {
     if (markReuse) {
       reusedValues++;
     }
-    return it->second + b->cash;
-  }
-
-  // Bankruptcy is not related to board position, don't cache
-  if (b->isBankrupt()) return BANKRUPT;
-
-  /*
-  const int edges[12] = {1, 2, 3, 5, 9, 10, 14, 15, 19, 21, 22, 23};
-  const int centers[9] = {6, 7, 8, 11, 12, 13, 16, 17, 18};
-  */
-
-  for (const tuple<int, int> &move : b->getMoveset()) {
-    int s, d;
-    tie(s, d) = move;
-
-    int diff = abs(s - d);
-    int dist = diff/5 + diff%5;
-    int val = dist > 1 ? b->board[s] : 1;
-
-    heuristicScore += val + (1 << (dist - 1));
-  }
-
-  /*
-  // Corners
-  if (this->isCompetitor(0)) heuristicScore -= CORNER_PENALTY;
-  if (this->isCompetitor(4)) heuristicScore -= CORNER_PENALTY;
-  if (this->isCompetitor(20)) heuristicScore -= CORNER_PENALTY;
-  if (this->isCompetitor(24)) heuristicScore -= CORNER_PENALTY;
-
-  for (int i=0; i<12; i++) {
-    if (this->isCompetitor(edges[i])) {
-      heuristicScore -= EDGE_PENALTY;
-    }
-  }
-
-  for (int i=0; i<9; i++) {
-    int cost = centers[i];
-    if (this->isCompetitor(cost)) {
-      heuristicScore += board[cost];
-    }
+    return it->second + b->cash + b->score;
   }
   */
 
+  for (int i=0; i<BOARD_SIZE; i++) {
+    if (!b->isCompetitor(i)) heuristicScore += 1;
+  }
+
+  /*
   // Add to hashtable
   hc[key] = heuristicScore;
+  */
 
-  return heuristicScore + b->cash;
+  return heuristicScore + b->cash + b->score;
 }
 
 float EMM::bestMove(Board *b, int nextTile, int depth, int* source, int* dest) {
@@ -258,13 +202,13 @@ float EMM::bestMove(Board *b, int nextTile, int depth, int* source, int* dest) {
 
   if (b->isBankrupt()) return BANKRUPT;
 
-  vector<tuple<int, int>> allPossibleMoves = b->getMoveset();
+  vector<tuple<int, int, int>> allPossibleMoves = b->getMoveset();
 
   if (allPossibleMoves.empty()) return BANKRUPT;
 
-  for (const tuple<int, int> &move : allPossibleMoves) {
-    int s, d;
-    tie(s, d) = move;
+  for (const tuple<int, int, int> &move : allPossibleMoves) {
+    int s, d, dist;
+    tie(s, d, dist) = move;
 
     Board* nextBoard = b->move(s, d, nextTile);
     float score = EMM::expectiminimax(nextBoard, depth-1);

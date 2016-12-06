@@ -71,24 +71,21 @@ float Board::competitorCosts() {
   return total;
 }
 
-vector<tuple<int, int>> Board::getMoveset() {
-  vector<tuple<int, int>> allPossibleMoves;
+vector<tuple<int, int, int>> Board::getMoveset() {
+  vector<tuple<int, int, int>> allPossibleMoves;
 
   for (int i=0; i<BOARD_SIZE; i++) {
     if (board[i] <= 0) continue;
 
     for (const int& j : possibleDest[i]) {
       int diff = abs(i-j);
-      bool isAdjacent = (diff / 5 + diff % 5) == 1;
+      int dist = diff/5 + diff%5;
 
-      if (diff / 5 + diff % 5 == 1) {
-        if (this->isEmpty(j)) {
-          allPossibleMoves.push_back(make_tuple(i, j));
-        }
-      } else {
-        if (board[i] == board[j]) {
-          allPossibleMoves.push_back(make_tuple(i, j));
-        }
+      bool walk = dist == 1 && this->isEmpty(j);
+      bool jump = dist != 1 && board[i] == board[j];
+
+      if (walk || jump) {
+        allPossibleMoves.push_back(make_tuple(i, j, dist));
       }
     }
   }
@@ -154,22 +151,20 @@ Board* Board::move(int source, int dest, int nextTile) {
     scoreDelta = newDest;
   }
 
-  if (dist == 1) {
-    newSource = nextTile;
-  } else {
-    newSource = 0;
-  }
+  newSource = dist == 1 ? nextTile : 0;
 
   Board* newBoard = new Board(*this);
 
   int destroyedCompetitors = 0;
   for (int i=1; i<dist; i++) {
     int pos = horizontalMove ? start + i : (start + i*5);
+    int val = newBoard->board[pos];
 
-    if (newBoard->isCompetitor(pos) && newBoard->board[pos] < 0 && sourceTile + newBoard->board[pos] > 0) {
-      newBoard->board[pos] = 0;
-      newBoard->competitors[pos] = false;
-      destroyedCompetitors++;
+    if (newBoard->isCompetitor(pos)) {
+      if (val == 0 || (val < 0 && sourceTile + val > 0)) {
+        newBoard->clearCompetitor(pos);
+        destroyedCompetitors++;
+      }
     }
   }
 
@@ -194,3 +189,31 @@ Board* Board::move(int source, int dest, int nextTile) {
 
   return newBoard;
 }
+
+int Board::getRandomTile(int score) {
+  float p = (rand()/static_cast<float>(RAND_MAX));
+  const float *prob_ptr = &DISTRIBUTION[0][0];
+  const int *tile_ptr = &TILES[0];
+  const int *end = TILES + TILE_TYPES;
+
+  if (score <= 300) {
+    // do nothing
+  } else if (score <= 600) {
+    prob_ptr += TILE_TYPES;
+  } else {
+    prob_ptr += TILE_TYPES << 1;
+  }
+
+  while((p -= *prob_ptr) > 0) {
+    ++prob_ptr;
+    ++tile_ptr;
+  }
+
+  if (tile_ptr > end) {
+    cout << "DEBUG: past end of array!" << endl;
+    return 0;
+  }
+
+  return *tile_ptr;
+}
+

@@ -10,7 +10,6 @@ class EMM {
 public:
   static void solveBestMove();
   static void getMaxScore();
-  static int getRandomTile(int score);
 
 private:
   static int heuristicScore(Board *b);

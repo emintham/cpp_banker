@@ -8,6 +8,14 @@ const int CORNER_PENALTY = 30;
 const int EDGE_PENALTY = 10;
 const int BANKRUPT = -1024;
 
+const int NUM_CORNERS = 4;
+const int NUM_EDGES = 12;
+const int NUM_CENTERS = 9;
+
+const int CORNERS[NUM_CORNERS] = {0, 4, 20, 24};
+const int EDGES[NUM_EDGES] = {1, 2, 3, 5, 9, 10, 14, 15, 19, 21, 22, 23};
+const int CENTERS[NUM_CENTERS] = {6, 7, 8, 11, 12, 13, 16, 17, 18};
+
 const int possibleDest[BOARD_SIZE][8] = {
   {1, 2, 3, 4, 5, 10, 15, 20}, // 0
   {0, 2, 3, 4, 6, 11, 16, 21}, // 1

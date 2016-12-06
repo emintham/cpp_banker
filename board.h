@@ -28,9 +28,10 @@ public:
   bool isCompetitor(int position);
   bool isBankrupt();
   float competitorCosts();
-  std::vector<std::tuple<int, int>> getMoveset();
+  std::vector<std::tuple<int, int, int>> getMoveset();
 
   static void printMove(int source, int dest);
+  static int getRandomTile(int score);
 
   // Board modifying methods
   void addCompetitor(int pos, int value);
