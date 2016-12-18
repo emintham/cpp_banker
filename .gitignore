@@ -4,3 +4,4 @@ callgrind*
 *.swp
 *.swo
 *.o
+tiles.txt
