@@ -51,7 +51,7 @@ void EMM::solveBestMove() {
     score = EMM::bestMove(b, nextTile, depth, &source, &dest);
 
     if (source < 0 || dest < 0) {
-      cout << "Failed!" << endl;
+      cout << "Failed!\n";
       break;
     }
 
@@ -59,23 +59,22 @@ void EMM::solveBestMove() {
 
     Board* newBoard = b->move(source, dest, nextTile);
 
-    cout << "Next tile: " << nextTile << endl;
-    cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash;
-    cout << endl;
+    cout << "Next tile: " << nextTile << '\n';
+    cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash << '\n';
     cout << "Heuristic: " << score;
 
     if (markReuse) {
       cout << ", " << "Reused values: " << reusedValues;
     }
-    cout << endl;
+    cout << '\n';
 
     Board::printMove(source, dest);
 
-    cout << string(50, '-') << endl;
+    cout << string(50, '-') << '\n';
 
     newBoard->print();
 
-    cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << endl << endl;
+    cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
 
     delete b;
     b = newBoard;
@@ -93,10 +92,10 @@ void EMM::getMaxScore() {
 
   int sumScore = 0;
   int runs = 0;
-  int score = 0;
+  float score = 0;
   int source = -1;
   int dest = -1;
-  int depth = 6;
+  int depth = 7;
   int maxRuns = 5;
 
   while (true) {
@@ -114,12 +113,9 @@ void EMM::getMaxScore() {
 
     score = EMM::bestMove(b, nextTile, depth, &source, &dest);
 
-    if (score < 0) {
+    if (score < 0 || source < 0 || dest < 0 || b->cash < 0) {
       b->print();
-      break;
-    }
 
-    if (source < 0 || dest < 0 || b->cash < 0) {
       runs++;
       sumScore += b->score;
 
@@ -133,19 +129,18 @@ void EMM::getMaxScore() {
 
     Board* newBoard = b->move(source, dest, nextTile);
 
-    cout << "Source: " << source << ", Dest: " << dest << endl;
-    cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash;
-    cout << endl;
+    // cout << "Source: " << source << ", Dest: " << dest << '\n';
+    cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash << '\n';
     cout << "Heuristic: " << score;
 
     if (markReuse) {
       cout << ", " << "Reused values: " << reusedValues;
     }
-    cout << endl;
+    cout << '\n';
 
     b->print();
 
-    cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << endl << endl;
+    cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
 
     delete b;
     b = newBoard;
@@ -159,7 +154,7 @@ void EMM::getMaxScore() {
 
   if (runs) {
     cout << "Average score across " << runs << " runs: ";
-    cout << (float)sumScore/(float)runs << endl;
+    cout << (float)sumScore/(float)runs << '\n';
   }
 }
 
@@ -180,7 +175,9 @@ int EMM::heuristicScore(Board *b) {
   */
 
   for (int i=0; i<BOARD_SIZE; i++) {
-    if (!b->isCompetitor(i)) heuristicScore += 1;
+    // heuristicScore += (int)b->competitors[i];
+    // if (!b->isCompetitor(i)) heuristicScore += 1;
+    heuristicScore += b->competitors.size() - b->competitors.count();
   }
 
   /*
@@ -206,7 +203,7 @@ float EMM::bestMove(Board *b, int nextTile, int depth, int* source, int* dest) {
 
   if (allPossibleMoves.empty()) return BANKRUPT;
 
-  for (const tuple<int, int, int> &move : allPossibleMoves) {
+  for (auto &move : allPossibleMoves) {
     int s, d, dist;
     tie(s, d, dist) = move;
 

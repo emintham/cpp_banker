@@ -10,10 +10,10 @@ using namespace std;
 void Board::print() {
   for (int i=0; i<BOARD_SIZE; i++) {
     if (i != 0 && i % 5 == 0) {
-      cout << endl;
+      cout << '\n';
     }
 
-    if (competitors[i]) {
+    if (this->isCompetitor(i)) {
       if (board[i] == 0) {
         cout << "( 0)";
       } else {
@@ -24,13 +24,13 @@ void Board::print() {
     }
   }
 
-  cout << endl;
+  cout << '\n';
 }
 
 void Board::printMove(int source, int dest) {
   for (int i=0; i<BOARD_SIZE; i++) {
     if (i != 0 && i % 5 == 0) {
-      cout << endl;
+      cout << '\n';
     }
 
     if (i == source) {
@@ -41,16 +41,16 @@ void Board::printMove(int source, int dest) {
       cout << "+ ";
     }
   }
-  cout << endl;
+  cout << '\n';
 }
 
 
 bool Board::isEmpty(int position) {
-  return !board[position] && !competitors[position];
+  return !board[position] && !this->isCompetitor(position);
 }
 
 bool Board::isCompetitor(int position) {
-  return competitors[position];
+  return competitors.test(position);
 }
 
 bool Board::isBankrupt() {
@@ -60,12 +60,8 @@ bool Board::isBankrupt() {
 float Board::competitorCosts() {
   float total= 0.0;
 
-  for (int i=0; i<BOARD_SIZE; i++) {
-    int value = board[i];
-
-    if (value < 0) {
-      total += value;
-    }
+  for (auto& num: board) {
+    total += num > 0 ? 0 : (float)num;
   }
 
   return total;
@@ -95,19 +91,19 @@ vector<tuple<int, int, int>> Board::getMoveset() {
 
 void Board::addCompetitor(int pos, int value) {
   board[pos] = value;
-  competitors[pos] = true;
+  competitors[pos] = 1;
   competitorTimers[pos] = 20;
 }
 
 void Board::clearCompetitor(int pos) {
   board[pos] = 0;
-  competitors[pos] = false;
+  competitors[pos] = 0;
   competitorTimers[pos] = 0;
 }
 
 void Board::updateTimer() {
   for (int i=0; i<BOARD_SIZE; i++) {
-    if (!competitors[i]) continue;
+    if (!this->isCompetitor(i)) continue;
 
     if (!competitorTimers[i]) {
       board[i]--;
@@ -141,7 +137,7 @@ Board* Board::move(int source, int dest, int nextTile) {
 
   int newDest, cashDelta, scoreDelta, newSource;
 
-  if (sourceTile != destTile) {
+  if (dist == 1) {
     newDest = sourceTile;
     cashDelta = -1;
     scoreDelta = 0;
@@ -210,7 +206,7 @@ int Board::getRandomTile(int score) {
   }
 
   if (tile_ptr > end) {
-    cout << "DEBUG: past end of array!" << endl;
+    cout << "DEBUG: past end of array!\n";
     return 0;
   }
 

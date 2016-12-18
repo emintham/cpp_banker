@@ -2,6 +2,7 @@
 #define __BOARD_H__
 
 #include <array>
+#include <bitset>
 #include <tuple>
 #include <vector>
 
@@ -15,7 +16,7 @@ public:
                                        0, 0, 1, 0, 0,
                                        0, 0, 0, 0, 0,
                                        0, 0, 0, 0, 0};
-  bool competitors[BOARD_SIZE] = {false};
+  std::bitset<BOARD_SIZE> competitors;
   int competitorTimers[BOARD_SIZE] = {0};
   int moves = 0;
   int score = 10;
