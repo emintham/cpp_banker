@@ -234,7 +234,6 @@ float EMM::expectiminimax(Board* board, int depth) {
 
   if (board->isBankrupt()) return BANKRUPT;
 
-  int score = board->score;
   int j = 0;
 
   if (board->score <= 300) {

@@ -123,7 +123,6 @@ Board* Board::move(int source, int dest, int nextTile) {
   int x2 = dest % 5;
   int y2 = dest / 5;
   int sourceTile = this->board[source];
-  int destTile = this->board[dest];
 
   bool horizontalMove = y1 == y2;
 
