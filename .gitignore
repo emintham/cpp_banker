@@ -5,3 +5,4 @@ callgrind*
 *.swo
 *.o
 tiles.txt
+test
