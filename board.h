@@ -18,7 +18,7 @@ public:
                                        0, 0, 0, 0, 0};
   std::bitset<BOARD_SIZE> competitors;
   int competitorTimers[BOARD_SIZE] = {0};
-  int moves = 0;
+  int bonus[BOARD_SIZE] = {0};
   int score = 10;
   int cash = 10;
 
@@ -28,7 +28,7 @@ public:
   bool isEmpty(int position);
   bool isCompetitor(int position);
   bool isBankrupt();
-  float competitorCosts();
+  int competitorCosts();
   std::vector<std::tuple<int, int, int>> getMoveset();
 
   static void printMove(int source, int dest);
@@ -37,10 +37,12 @@ public:
   // Board modifying methods
   void addCompetitor(int pos, int value);
   void clearCompetitor(int pos);
+  void addBonus(int pos, int value);
   Board* move(int source, int dest, int nextTile);
 
 private:
   void updateTimer();
+  void updateBonus();
 };
 
 #endif

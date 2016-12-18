@@ -57,11 +57,11 @@ bool Board::isBankrupt() {
   return cash < 0;
 }
 
-float Board::competitorCosts() {
-  float total= 0.0;
+int Board::competitorCosts() {
+  int total = 0;
 
   for (auto& num: board) {
-    total += num > 0 ? 0 : (float)num;
+    total += num > 0 ? 0 : num;
   }
 
   return total;
@@ -101,6 +101,10 @@ void Board::clearCompetitor(int pos) {
   competitorTimers[pos] = 0;
 }
 
+void Board::addBonus(int pos, int value) {
+  bonus[pos] = value;
+}
+
 void Board::updateTimer() {
   for (int i=0; i<BOARD_SIZE; i++) {
     if (!this->isCompetitor(i)) continue;
@@ -112,6 +116,14 @@ void Board::updateTimer() {
     }
 
     competitorTimers[i]--;
+  }
+}
+
+void Board::updateBonus() {
+  for (int i=0; i<BOARD_SIZE; i++) {
+    if (bonus[i]) {
+      bonus[i]--;
+    }
   }
 }
 
@@ -173,14 +185,24 @@ Board* Board::move(int source, int dest, int nextTile) {
 
   newBoard->board[source] = newSource;
   newBoard->board[dest] = newDest;
+  newBoard->score += scoreDelta;
 
-  if (dist == 1 && nextTile <= 0) {
-    newBoard->addCompetitor(source, nextTile);
-    newBoard->updateTimer();
+  if (dist == 1) {
+    if (nextTile <= 0) {
+      newBoard->addCompetitor(source, nextTile);
+      newBoard->updateTimer();
+    }
+
+    auto bonusValue = bonus[dest];
+
+    if (bonusValue) {
+      newBoard->cash += bonusValue;
+      newBoard->bonus[dest] = 0;
+    }
   }
 
-  newBoard->score += scoreDelta;
-  newBoard->moves++;
+  // This has to happen after the bonus calculation
+  newBoard->updateBonus();
 
   return newBoard;
 }
