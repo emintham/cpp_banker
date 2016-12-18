@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <stack>
 #include <tuple>
@@ -31,14 +32,25 @@ int hashBoard(const Board &b) {
 
 void EMM::solveBestMove() {
   int nextTile;
+  int pos;
   float score;
   int source = -1;
   int dest = -1;
   int depth = 6;
 
+  ofstream myfile ("tiles.txt", std::ios_base::app);
+
   Board* b = new Board();
 
-  while (scanf("%d", &nextTile) != EOF) {
+  while (scanf("%d %d", &nextTile, &pos) != EOF) {
+
+    if (pos > 0) {
+      b->addBonus(pos, nextTile);
+      continue;
+    }
+
+    // Record the tiles and score to file
+    myfile << nextTile << " " << b->score << '\n';
 
     retry: // FOR GOTO
 
@@ -72,7 +84,7 @@ void EMM::solveBestMove() {
 
     cout << string(50, '-') << '\n';
 
-    newBoard->print();
+    // newBoard->print();
 
     cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
 
@@ -85,6 +97,7 @@ void EMM::solveBestMove() {
     if (dist > 1) goto retry;
   }
 
+  myfile.close();
 }
 
 void EMM::getMaxScore() {
