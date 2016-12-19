@@ -13,8 +13,9 @@ public:
 
 private:
   static int heuristicScore(Board *b);
-  static float bestMove(Board *b, int nextTile, int depth, int* source, int* dest);
+  static float bestMove(Board *b, int nextTile, bool isNonProfit, int depth, int* source, int* dest);
   static float expectiminimax(Board* board, int depth);
+  static Board* solveBestMoveHelper(Board *b, int nextTile, bool isNonProfit, int depth, int *dist);
 };
 
 #endif

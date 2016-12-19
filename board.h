@@ -19,6 +19,9 @@ public:
   std::bitset<BOARD_SIZE> competitors;
   int competitorTimers[BOARD_SIZE] = {0};
   int bonus[BOARD_SIZE] = {0};
+  bool negativeLawsuits[BOARD_SIZE] = {false};
+  bool positiveLawsuits[BOARD_SIZE] = {false};
+  bool nonProfits[BOARD_SIZE] = {false};
   int score = 10;
   int cash = 10;
 
@@ -38,7 +41,9 @@ public:
   void addCompetitor(int pos, int value);
   void clearCompetitor(int pos);
   void addBonus(int pos, int value);
-  Board* move(int source, int dest, int nextTile);
+  void addLawsuit(int pos, bool isNegative);
+  void addNonProfit(int pos, int value);
+  Board* move(int source, int dest, int nextTile, bool isNonProfit);
 
 private:
   void updateTimer();

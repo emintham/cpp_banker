@@ -1,7 +1,9 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
+#include <sstream>
 #include <stack>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -30,71 +32,100 @@ int hashBoard(const Board &b) {
   return h;
 }
 
+Board* EMM::solveBestMoveHelper(
+        Board* b,
+        int nextTile,
+        bool isNonProfit,
+        int depth,
+        int* dist) {
+  clock_t t = clock();  // Start recording
+
+  int source, dest;
+  int score = EMM::bestMove(b, nextTile, isNonProfit, depth, &source, &dest);
+
+  if (source < 0 || dest < 0) {
+    cout << "Failed!\n";
+    return NULL;
+  }
+
+  t = clock() - t;      // End recording
+
+  Board* newBoard = b->move(source, dest, nextTile, isNonProfit);
+
+  cout << "Next tile: " << nextTile << '\n';
+  cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash << '\n';
+  cout << "Heuristic: " << score << '\n';
+
+  Board::printMove(source, dest);
+
+  cout << string(50, '-') << '\n';
+
+  cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
+
+  int diff = abs(source - dest);
+  *dist = diff/5 + diff%5;
+
+  delete b;
+  return newBoard;
+}
+
 void EMM::solveBestMove() {
-  int nextTile;
-  int pos;
-  float score;
-  int source = -1;
-  int dest = -1;
-  int depth = 6;
+  const int depth = 6;
 
   ofstream myfile ("tiles.txt", std::ios_base::app);
+  string line;
 
   Board* b = new Board();
 
-  while (scanf("%d %d", &nextTile, &pos) != EOF) {
+  while (getline(cin, line)){
+    istringstream iss (line);
 
-    if (pos > 0) {
-      b->addBonus(pos, nextTile);
-      continue;
+    char c;
+    char lawsuit;
+    int cash;
+    int pos;
+    int dist = 10; // anything greater than 1 will do
+
+    iss >> c;
+
+    switch (c) {
+      case '$':
+        iss >> cash >> pos;
+        b->addBonus(pos, cash);
+        break;
+
+      case '!':
+        iss >> lawsuit >> pos;
+        b->addLawsuit(pos, lawsuit == '-');
+        break;
+
+      case 'p':
+        b->print();
+        break;
+
+      case '.':
+        int nonProfit;
+
+        iss >> nonProfit;
+
+        while (dist > 1) {
+          b = EMM::solveBestMoveHelper(b, nonProfit, true, depth, &dist);
+        }
+
+        break;
+
+      default:
+        const int nextTile = stoi(line);
+
+        // Record the tiles and score to file
+        myfile << nextTile << " " << b->score << '\n';
+
+        while (dist > 1) {
+          b = EMM::solveBestMoveHelper(b, nextTile, false, depth, &dist);
+        }
+
+        break;
     }
-
-    // Record the tiles and score to file
-    myfile << nextTile << " " << b->score << '\n';
-
-    retry: // FOR GOTO
-
-    if (markReuse) {
-      reusedValues = 0;
-    }
-
-    clock_t t = clock();  // Start recording
-
-    score = EMM::bestMove(b, nextTile, depth, &source, &dest);
-
-    if (source < 0 || dest < 0) {
-      cout << "Failed!\n";
-      break;
-    }
-
-    t = clock() - t;      // End recording
-
-    Board* newBoard = b->move(source, dest, nextTile);
-
-    cout << "Next tile: " << nextTile << '\n';
-    cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash << '\n';
-    cout << "Heuristic: " << score;
-
-    if (markReuse) {
-      cout << ", " << "Reused values: " << reusedValues;
-    }
-    cout << '\n';
-
-    Board::printMove(source, dest);
-
-    cout << string(50, '-') << '\n';
-
-    // newBoard->print();
-
-    cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
-
-    delete b;
-    b = newBoard;
-
-    int diff = abs(source - dest);
-    int dist = diff/5 + diff%5;
-
-    if (dist > 1) goto retry;
   }
 
   myfile.close();
@@ -124,7 +155,7 @@ void EMM::getMaxScore() {
 
     clock_t t = clock();  // Start recording
 
-    score = EMM::bestMove(b, nextTile, depth, &source, &dest);
+    score = EMM::bestMove(b, nextTile, false, depth, &source, &dest);
 
     if (score < 0 || source < 0 || dest < 0 || b->cash < 0) {
       b->print();
@@ -140,7 +171,7 @@ void EMM::getMaxScore() {
 
     t = clock() - t;      // End recording
 
-    Board* newBoard = b->move(source, dest, nextTile);
+    Board* newBoard = b->move(source, dest, nextTile, false);
 
     // cout << "Source: " << source << ", Dest: " << dest << '\n';
     cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash << '\n';
@@ -201,7 +232,14 @@ int EMM::heuristicScore(Board *b) {
   return heuristicScore + b->cash + b->score;
 }
 
-float EMM::bestMove(Board *b, int nextTile, int depth, int* source, int* dest) {
+float EMM::bestMove(
+        Board *b,
+        int nextTile,
+        bool isNonProfit,
+        int depth,
+        int* source,
+        int* dest) {
+
   if (depth == 0) {
     return EMM::heuristicScore(b);
   }
@@ -212,7 +250,7 @@ float EMM::bestMove(Board *b, int nextTile, int depth, int* source, int* dest) {
 
   if (b->isBankrupt()) return BANKRUPT;
 
-  vector<tuple<int, int, int>> allPossibleMoves = b->getMoveset();
+  auto allPossibleMoves = b->getMoveset();
 
   if (allPossibleMoves.empty()) return BANKRUPT;
 
@@ -220,7 +258,14 @@ float EMM::bestMove(Board *b, int nextTile, int depth, int* source, int* dest) {
     int s, d, dist;
     tie(s, d, dist) = move;
 
-    Board* nextBoard = b->move(s, d, nextTile);
+    // Do not recommend moves where the competitor or nonProfit ends up in the
+    // corner
+    bool badTile = nextTile <= 0 || isNonProfit;
+    bool isCorner = s == 0 || s == 4 || s == 20 || s == 24;
+
+    if (badTile && isCorner) continue;
+
+    Board* nextBoard = b->move(s, d, nextTile, isNonProfit);
     float score = EMM::expectiminimax(nextBoard, depth-1);
 
     if (score > bestScore) {
@@ -264,7 +309,7 @@ float EMM::expectiminimax(Board* board, int depth) {
     int tile = TILES[i];
     float probability = DISTRIBUTION[j][i];
 
-    float heuristicScore = EMM::bestMove(board, tile, depth-1, &source, &dest);
+    float heuristicScore = EMM::bestMove(board, tile, false, depth-1, &source, &dest);
 
     expectedMaxScore += heuristicScore * probability;
   }
