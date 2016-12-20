@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <tuple>
 #include <vector>
@@ -15,10 +16,14 @@ void Board::print() {
 
     if (this->isCompetitor(i)) {
       if (board[i] == 0) {
-        cout << "( 0)";
+        cout << "(0)";
       } else {
         cout << '(' << board[i] << ')';
       }
+    } else if (negativeLawsuits[i]) {
+      cout << " - ";
+    } else if (positiveLawsuits[i]) {
+      cout << " + ";
     } else {
       int bonusVal = bonus[i];
 
@@ -80,7 +85,16 @@ vector<tuple<int, int, int>> Board::getMoveset() {
       int diff = abs(i-j);
       int dist = diff/5 + diff%5;
 
-      bool walk = dist == 1 && this->isEmpty(j);
+      // If source is a lawsuit, it can only walk to an adjacent tile
+      if (negativeLawsuits[i] || positiveLawsuits[i]) {
+        if (dist == 1 && !this->isEmpty(j)) {
+          allPossibleMoves.push_back(make_tuple(i, j, dist));
+        }
+
+        continue;
+      }
+
+      bool walk = dist == 1 && !nonProfits[j] && (this->isEmpty(j) || board[i] == board[j]);
       bool jump = dist != 1 && board[i] == board[j] && !nonProfits[j];
 
       if (walk || jump) {
@@ -108,11 +122,16 @@ void Board::addBonus(int pos, int value) {
   bonus[pos] = value;
 }
 
-void Board::addLawsuit(int pos, bool isNegative) {
-  if (isNegative) {
-    negativeLawsuits[pos] = true;
-  } else {
-    positiveLawsuits[pos] = true;
+void Board::addLawsuit(int pos, TileType tileType) {
+  switch(tileType) {
+    case negativeLawsuit:
+      negativeLawsuits[pos] = true;
+      break;
+    case positiveLawsuit:
+      positiveLawsuits[pos] = true;
+      break;
+    default:
+      break;
   }
 }
 
@@ -146,15 +165,15 @@ void Board::updateBonus() {
 Board* Board::move(
         int source,
         int dest,
-        int nextTile,
-        bool isNonProfit) {
+        const Tile& nextTile) {
   int start, dist;
 
-  int x1 = source % 5;
-  int y1 = source / 5;
-  int x2 = dest % 5;
-  int y2 = dest / 5;
-  int sourceTile = this->board[source];
+  const int x1 = source % 5;
+  const int y1 = source / 5;
+  const int x2 = dest % 5;
+  const int y2 = dest / 5;
+  const int sourceTile = this->board[source];
+  const int destTile = this->board[dest];
 
   bool horizontalMove = y1 == y2;
 
@@ -166,34 +185,45 @@ Board* Board::move(
     dist = abs(y1 - y2);
   }
 
+  Board* newBoard = new Board(*this);
+
+  if (negativeLawsuits[source]) {
+    newBoard->board[dest]--;
+    newBoard->negativeLawsuits[source] = false;
+
+    return newBoard;
+  }
+
+  if (positiveLawsuits[source]) {
+    newBoard->board[dest]++;
+    newBoard->positiveLawsuits[source] = false;
+
+    return newBoard;
+  }
+
   int newDest, cashDelta, scoreDelta, newSource;
 
-  if (dist == 1) {
+  if (destTile == sourceTile) {
+    newDest = sourceTile + 1;
+    cashDelta = newDest;
+    scoreDelta = newDest;
+  } else {
+
     if (negativeLawsuits[dest]) {
       newDest = sourceTile - 1;
-      negativeLawsuits[dest] = false;
+      newBoard->negativeLawsuits[dest] = false;
     } else if (positiveLawsuits[dest]) {
       newDest = sourceTile + 1;
-      positiveLawsuits[dest] = false;
+      newBoard->positiveLawsuits[dest] = false;
     } else {
       newDest = sourceTile;
     }
 
     cashDelta = -1;
     scoreDelta = 0;
-  } else {
-    newDest = sourceTile+1;
-    cashDelta = newDest;
-    scoreDelta = newDest;
   }
 
-  newSource = dist == 1 ? nextTile : 0;
-
-  Board* newBoard = new Board(*this);
-
-  if (isNonProfit) {
-    newBoard->nonProfits[source] = true;
-  }
+  newSource = dist == 1 ? nextTile.value : 0;
 
   int destroyedCompetitors = 0;
   for (int i=1; i<dist; i++) {
@@ -230,8 +260,23 @@ Board* Board::move(
   newBoard->score += scoreDelta;
 
   if (dist == 1) {
-    if (nextTile <= 0) {
-      newBoard->addCompetitor(source, nextTile);
+    switch (nextTile.tileType) {
+      case nonProfit:
+        newBoard->nonProfits[source] = true;
+        break;
+
+      case negativeLawsuit:
+        newBoard->addLawsuit(source, negativeLawsuit);
+        break;
+
+      case positiveLawsuit:
+        newBoard->addLawsuit(source, positiveLawsuit);
+        break;
+
+      default:
+        if (nextTile.value <= 0) {
+          newBoard->addCompetitor(source, nextTile.value);
+        }
     }
 
     auto bonusValue = bonus[dest];
@@ -258,12 +303,10 @@ int Board::getRandomTile(int score) {
   const int *tile_ptr = &TILES[0];
   const int *end = TILES + TILE_TYPES;
 
-  if (score <= 300) {
-    // do nothing
-  } else if (score <= 600) {
-    prob_ptr += TILE_TYPES;
-  } else {
-    prob_ptr += TILE_TYPES << 1;
+  if (score >= 100) {
+    const int jumpLength = max(score / 100 - 1, PROBABILITY_INTERVALS-1);
+    cout << "DEBUG: Score: " << score << ", Jump: " << jumpLength << '\n';
+    prob_ptr += TILE_TYPES << jumpLength;
   }
 
   while((p -= *prob_ptr) > 0) {

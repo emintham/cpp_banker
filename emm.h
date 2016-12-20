@@ -9,13 +9,12 @@ class EMM {
 
 public:
   static void solveBestMove();
-  static void getMaxScore();
 
 private:
   static int heuristicScore(Board *b);
-  static float bestMove(Board *b, int nextTile, bool isNonProfit, int depth, int* source, int* dest);
+  static float bestMove(Board *b, const Tile& nextTile, int depth, int* source, int* dest);
   static float expectiminimax(Board* board, int depth);
-  static Board* solveBestMoveHelper(Board *b, int nextTile, bool isNonProfit, int depth, int *dist);
+  static Board* solveBestMoveHelper(Board *b, const Tile& nextTile, int depth, int *dist);
 };
 
 #endif

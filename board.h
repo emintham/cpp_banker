@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "constants.h"
+#include "tile.h"
 
 class Board {
 
@@ -41,9 +42,9 @@ public:
   void addCompetitor(int pos, int value);
   void clearCompetitor(int pos);
   void addBonus(int pos, int value);
-  void addLawsuit(int pos, bool isNegative);
+  void addLawsuit(int pos, TileType tileType);
   void addNonProfit(int pos, int value);
-  Board* move(int source, int dest, int nextTile, bool isNonProfit);
+  Board* move(int source, int dest, const Tile& nextTile);
 
 private:
   void updateTimer();

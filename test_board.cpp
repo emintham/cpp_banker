@@ -6,6 +6,7 @@
 
 #include "constants.h"
 #include "board.h"
+#include "tile.h"
 
 
 TEST_CASE("Board initialization", "[Board]") {
@@ -212,11 +213,11 @@ TEST_CASE("bonus is decreased after each move", "[Board]") {
   b->addBonus(0, 5);
   REQUIRE(b->bonus[0] == 5);
 
-  auto b2 = b->move(12, 13, 1, false);
+  auto b2 = b->move(12, 13, Tile(1));
   REQUIRE(b2->bonus[0] == 4);
 
   b2->addBonus(1, 10);
-  auto b3 = b2->move(12, 11, 2, false);
+  auto b3 = b2->move(12, 11, Tile(2));
   REQUIRE(b3->bonus[0] == 3);
   REQUIRE(b3->bonus[1] == 9);
 
@@ -232,7 +233,7 @@ TEST_CASE("bonus is added to cash", "[Board]") {
   b->addBonus(11, bonusVal);
   REQUIRE(b->bonus[11] == bonusVal);
 
-  auto b2 = b->move(12, 11, 1, false);
+  auto b2 = b->move(12, 11, Tile(1));
   REQUIRE(b2->cash == b->cash + bonusVal);
 
   delete b;
@@ -242,11 +243,11 @@ TEST_CASE("bonus is added to cash", "[Board]") {
 TEST_CASE("addLawsuit", "[Board]") {
   Board *b = new Board();
 
-  b->addLawsuit(11, false);
+  b->addLawsuit(11, positiveLawsuit);
   REQUIRE(b->positiveLawsuits[11]);
   REQUIRE(!b->negativeLawsuits[11]);
 
-  b->addLawsuit(10, true);
+  b->addLawsuit(10, negativeLawsuit);
   REQUIRE(b->negativeLawsuits[10]);
   REQUIRE(!b->positiveLawsuits[10]);
 
@@ -256,18 +257,18 @@ TEST_CASE("addLawsuit", "[Board]") {
 TEST_CASE("Lawsuit effects", "[Board]") {
   Board *b = new Board();
 
-  b->addLawsuit(11, false);
+  b->addLawsuit(11, positiveLawsuit);
   REQUIRE(b->positiveLawsuits[11]);
 
-  auto b2 = b->move(12, 11, 1, false);
+  auto b2 = b->move(12, 11, Tile(1));
   REQUIRE(b2->board[11] == 2);
   REQUIRE(b2->board[12] == 1);
   REQUIRE(!b2->positiveLawsuits[11]);
 
-  b2->addLawsuit(13, true);
+  b2->addLawsuit(13, negativeLawsuit);
   REQUIRE(b2->negativeLawsuits[13]);
 
-  auto b3 = b2->move(12, 13, 1, false);
+  auto b3 = b2->move(12, 13, Tile(1));
   REQUIRE(b3->board[11] == 2);
   REQUIRE(b3->board[12] == 1);
   REQUIRE(b3->board[13] == 0);
