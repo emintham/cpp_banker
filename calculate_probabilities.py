@@ -6,7 +6,11 @@ def read_from_file(filename='tiles.txt'):
 
     with open(filename, 'rb') as f:
         for line in f:
-            tile, score = [int(i) for i in line.split(' ')]
+            tile, score = line.split(' ')
+            if tile.startswith('$'):
+                continue
+
+            score = int(score)
             score_category = score / 100
             tiles[score_category][tile] += 1
 

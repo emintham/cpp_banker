@@ -13,15 +13,13 @@
 #include "emm.h"
 #include "tile.h"
 
-using namespace std;
-
 // Initialize static member variables
 int EMM::reusedValues = 0;
 bool EMM::markReuse = true;
 
 
 // Cache for reused heuristic values
-typedef map<int, int> HeuristicCache;
+typedef std::map<int, int> HeuristicCache;
 static HeuristicCache hc;
 
 int hashBoard(const Board &b) {
@@ -33,19 +31,21 @@ int hashBoard(const Board &b) {
   return h;
 }
 
-Board* EMM::solveBestMoveHelper(
+Board* EMM::solveBestMove(
         Board* b,
         const Tile& nextTile,
         int depth,
         int* dist) {
+  using std::cout;
+
   clock_t t = clock();  // Start recording
 
   int source, dest;
-  int score = EMM::bestMove(b, nextTile, depth, &source, &dest);
+  EMM::bestMove(b, nextTile, depth, &source, &dest);
 
   if (source < 0 || dest < 0) {
     cout << "Failed!\n";
-    return NULL;
+    return nullptr;
   }
 
   t = clock() - t;      // End recording
@@ -57,50 +57,124 @@ Board* EMM::solveBestMoveHelper(
 
   Board::printMove(source, dest);
 
-  cout << string(50, '-') << '\n';
+  cout << std::string(50, '-') << '\n';
 
   cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
 
-  int diff = abs(source - dest);
+  const int diff = abs(source - dest);
   *dist = diff/5 + diff%5;
 
   delete b;
   return newBoard;
 }
 
-void EMM::solveBestMove() {
+Board* EMM::handleLawsuit(
+        std::istringstream& currentLine,
+        std::ofstream& tileFile,
+        Board* b,
+        const int depth) {
+  char c;
+  int dist = 0;
+  Board* newBoard = b;
+
+  currentLine >> c;
+  const Tile tile = Tile(0, (c == '-') ? negativeLawsuit : positiveLawsuit);
+
+  tileFile << c << ' ' << b->score << '\n';
+
+  do {
+    newBoard = EMM::solveBestMove(newBoard, tile, depth, &dist);
+  } while (dist > 1);
+
+  return newBoard;
+}
+
+Board* EMM::handleBonus(
+        std::istringstream& currentLine,
+        std::ofstream& tileFile,
+        Board* b,
+        const int depth) {
+  int cash, pos;
+
+  currentLine >> cash >> pos;
+
+  tileFile << '$' << cash << ' ' << b->score << '\n';
+
+  b->addBonus(pos, cash);
+
+  return b;
+}
+
+Board* EMM::handleNonProfit(
+        std::istringstream& currentLine,
+        std::ofstream& tileFile,
+        Board* b,
+        const int depth) {
+  int nonProfitValue, dist;
+  Board* newBoard = b;
+
+  currentLine >> nonProfitValue;
+
+  tileFile << '.' << nonProfitValue << ' ' << b->score << '\n';
+
+  do {
+    newBoard = EMM::solveBestMove(newBoard, Tile(nonProfitValue, nonProfit), depth, &dist);
+  } while (dist > 1);
+
+  return newBoard;
+}
+
+void EMM::handleDebug(
+        std::istringstream& currentLine,
+        std::ofstream& tileFile,
+        Board* b) {
+  std::string command;
+  currentLine >> command;
+
+  if (command == "ct") {
+    b->printCompetitorTimers();
+  }
+}
+
+Board* EMM::handleMyTile(
+        const int nextTile,
+        std::ofstream& tileFile,
+        Board* b,
+        const int depth) {
+  int dist;
+  Board* newBoard = b;
+
+  // Record the tiles and score to file
+  tileFile << nextTile << " " << b->score << '\n';
+
+  do {
+    newBoard = EMM::solveBestMove(newBoard, Tile(nextTile), depth, &dist);
+  } while (dist > 1);
+
+  return newBoard;
+}
+
+void EMM::commandParser() {
   const int depth = 6;
 
-  ofstream myfile ("tiles.txt", std::ios_base::app);
-  string line;
+  std::ofstream myfile ("tiles.txt", std::ios_base::app);
+  std::string line;
 
   Board* b = new Board();
 
-  while (getline(cin, line)){
-    istringstream iss (line);
+  while (getline(std::cin, line)){
+    std::istringstream iss (line);
 
     char c;
-    int cash;
-    int pos;
-    int dist = 10; // anything greater than 1 will do
-
     iss >> c;
 
     switch (c) {
       case '$': {
-        iss >> cash >> pos;
-        b->addBonus(pos, cash);
+        b = EMM::handleBonus(iss, myfile, b, depth);
         break;
       }
       case '!': {
-        iss >> c;
-
-        const Tile tile = Tile(0, (c == '-') ? negativeLawsuit : positiveLawsuit);
-
-        while (dist > 1) {
-          b = EMM::solveBestMoveHelper(b, tile, depth, &dist);
-        }
-
+        b = EMM::handleLawsuit(iss, myfile, b, depth);
         break;
       }
       case 'p': {
@@ -108,30 +182,22 @@ void EMM::solveBestMove() {
         break;
       }
       case '.': {
-        int nonProfitValue;
-
-        iss >> nonProfitValue;
-
-        while (dist > 1) {
-          b = EMM::solveBestMoveHelper(b, Tile(nonProfitValue, nonProfit), depth, &dist);
-        }
-
+        b = EMM::handleNonProfit(iss, myfile, b, depth);
+        break;
+      }
+      case 'd': {
+        EMM::handleDebug(iss, myfile, b);
         break;
       }
       default: {
         const int nextTile = stoi(line);
-
-        // Record the tiles and score to file
-        myfile << nextTile << " " << b->score << '\n';
-
-        while (dist > 1) {
-          b = EMM::solveBestMoveHelper(b, Tile(nextTile), depth, &dist);
-        }
-
+        b = EMM::handleMyTile(nextTile, myfile, b, depth);
         break;
       }
     }
   }
+
+  delete b;
 
   myfile.close();
 }
@@ -190,7 +256,7 @@ float EMM::bestMove(
 
   for (auto &move : allPossibleMoves) {
     int s, d, dist;
-    tie(s, d, dist) = move;
+    std::tie(s, d, dist) = move;
 
     // Do not recommend moves where the competitor or nonProfit ends up in the
     // corner

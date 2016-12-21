@@ -1,14 +1,17 @@
 #include <algorithm>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <tuple>
+#include <iomanip>
 #include <vector>
 
 #include "constants.h"
 #include "board.h"
 
-using namespace std;
+void Board::print() const {
+  using std::cout;
 
-void Board::print() {
   for (int i=0; i<BOARD_SIZE; i++) {
     if (i != 0 && i % 5 == 0) {
       cout << '\n';
@@ -18,14 +21,14 @@ void Board::print() {
       if (board[i] == 0) {
         cout << "(0)";
       } else {
-        cout << '(' << board[i] << ')';
+        cout << ' ' << board[i];
       }
     } else if (negativeLawsuits[i]) {
       cout << " - ";
     } else if (positiveLawsuits[i]) {
       cout << " + ";
     } else {
-      int bonusVal = bonus[i];
+      const int bonusVal = bonus[i];
 
       cout << (bonusVal ? '$' : ' ') << (bonusVal ? bonusVal : board[i]);
       cout << (nonProfits[i] ? '*' : ' ');
@@ -35,37 +38,56 @@ void Board::print() {
   cout << '\n';
 }
 
-void Board::printMove(int source, int dest) {
+void Board::printMove(const int source, const int dest) {
   for (int i=0; i<BOARD_SIZE; i++) {
     if (i != 0 && i % 5 == 0) {
-      cout << '\n';
+      std::cout << '\n';
     }
 
+    char c;
     if (i == source) {
-      cout << "A ";
+      c = 'A';
     } else if (i == dest) {
-      cout << "B ";
+      c = 'B';
     } else {
-      cout << "+ ";
+      c = '+';
     }
+
+    std::ostringstream oss;
+    oss << std::setw(2) << c;
+
+    std::cout << oss.str() << ' ';
   }
-  cout << '\n';
+  std::cout << '\n';
 }
 
+void Board::printCompetitorTimers() const {
+  for (int i=0; i<BOARD_SIZE; i++) {
+    if (i != 0 && i % 5 == 0) {
+      std::cout << '\n';
+    }
 
-bool Board::isEmpty(int position) {
+    std::ostringstream oss;
+    oss << std::setw(2) << std::to_string(competitorTimers[i]);
+
+    std::cout << oss.str() << ' ';
+  }
+  std::cout << '\n';
+}
+
+bool Board::isEmpty(int position) const {
   return !board[position] && !this->isCompetitor(position);
 }
 
-bool Board::isCompetitor(int position) {
+bool Board::isCompetitor(int position) const {
   return competitors.test(position);
 }
 
-bool Board::isBankrupt() {
+bool Board::isBankrupt() const {
   return cash < 0;
 }
 
-int Board::competitorCosts() {
+int Board::competitorCosts() const {
   int total = 0;
 
   for (auto& num: board) {
@@ -75,8 +97,8 @@ int Board::competitorCosts() {
   return total;
 }
 
-vector<tuple<int, int, int>> Board::getMoveset() {
-  vector<tuple<int, int, int>> allPossibleMoves;
+std::vector<std::tuple<int, int, int>> Board::getMoveset() const {
+  std::vector<std::tuple<int, int, int>> allPossibleMoves;
 
   for (int i=0; i<BOARD_SIZE; i++) {
     if (board[i] <= 0 || nonProfits[i]) continue;
@@ -88,7 +110,7 @@ vector<tuple<int, int, int>> Board::getMoveset() {
       // If source is a lawsuit, it can only walk to an adjacent tile
       if (negativeLawsuits[i] || positiveLawsuits[i]) {
         if (dist == 1 && !this->isEmpty(j)) {
-          allPossibleMoves.push_back(make_tuple(i, j, dist));
+          allPossibleMoves.push_back(std::make_tuple(i, j, dist));
         }
 
         continue;
@@ -98,7 +120,7 @@ vector<tuple<int, int, int>> Board::getMoveset() {
       bool jump = dist != 1 && board[i] == board[j] && !nonProfits[j];
 
       if (walk || jump) {
-        allPossibleMoves.push_back(make_tuple(i, j, dist));
+        allPossibleMoves.push_back(std::make_tuple(i, j, dist));
       }
     }
   }
@@ -109,7 +131,7 @@ vector<tuple<int, int, int>> Board::getMoveset() {
 void Board::addCompetitor(int pos, int value) {
   board[pos] = value;
   competitors[pos] = 1;
-  competitorTimers[pos] = 20;
+  competitorTimers[pos] = 19;
 }
 
 void Board::clearCompetitor(int pos) {
@@ -190,6 +212,8 @@ Board* Board::move(
   if (negativeLawsuits[source]) {
     newBoard->board[dest]--;
     newBoard->negativeLawsuits[source] = false;
+    newBoard->updateTimer();
+    newBoard->updateBonus();
 
     return newBoard;
   }
@@ -197,6 +221,8 @@ Board* Board::move(
   if (positiveLawsuits[source]) {
     newBoard->board[dest]++;
     newBoard->positiveLawsuits[source] = false;
+    newBoard->updateTimer();
+    newBoard->updateBonus();
 
     return newBoard;
   }
@@ -227,8 +253,8 @@ Board* Board::move(
 
   int destroyedCompetitors = 0;
   for (int i=1; i<dist; i++) {
-    int pos = horizontalMove ? start + i : (start + i*5);
-    int val = newBoard->board[pos];
+    const int pos = horizontalMove ? start + i : (start + i*5);
+    const int val = newBoard->board[pos];
 
     if (newBoard->isCompetitor(pos)) {
       if (sourceTile + val > 0) {
@@ -248,7 +274,7 @@ Board* Board::move(
   }
 
   if (destroyedCompetitors > 1) {
-    int delta = 1 << destroyedCompetitors;
+    const int delta = 1 << destroyedCompetitors;
     newBoard->score += delta;
     newBoard->cash += delta;
   }
@@ -279,7 +305,7 @@ Board* Board::move(
         }
     }
 
-    auto bonusValue = bonus[dest];
+    const auto bonusValue = newBoard->bonus[dest];
 
     if (bonusValue) {
       // We add 1 because you are not charged for the new tile if moving to a
@@ -298,13 +324,15 @@ Board* Board::move(
 }
 
 int Board::getRandomTile(int score) {
+  using std::cout;
+
   float p = (rand()/static_cast<float>(RAND_MAX));
   const float *prob_ptr = &DISTRIBUTION[0][0];
   const int *tile_ptr = &TILES[0];
   const int *end = TILES + TILE_TYPES;
 
   if (score >= 100) {
-    const int jumpLength = max(score / 100 - 1, PROBABILITY_INTERVALS-1);
+    const int jumpLength = std::max(score / 100 - 1, PROBABILITY_INTERVALS-1);
     cout << "DEBUG: Score: " << score << ", Jump: " << jumpLength << '\n';
     prob_ptr += TILE_TYPES << jumpLength;
   }

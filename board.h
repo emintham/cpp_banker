@@ -28,14 +28,15 @@ public:
 
   // ----- Methods ----------
   // Util methods
-  void print();
-  bool isEmpty(int position);
-  bool isCompetitor(int position);
-  bool isBankrupt();
-  int competitorCosts();
-  std::vector<std::tuple<int, int, int>> getMoveset();
+  void print() const;
+  void printCompetitorTimers() const;
+  bool isEmpty(int position) const;
+  bool isCompetitor(int position) const;
+  bool isBankrupt() const;
+  int competitorCosts() const;
+  std::vector<std::tuple<int, int, int>> getMoveset() const;
 
-  static void printMove(int source, int dest);
+  static void printMove(const int source, const int dest);
   static int getRandomTile(int score);
 
   // Board modifying methods

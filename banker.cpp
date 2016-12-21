@@ -2,7 +2,7 @@
 
 int main() {
 
-  EMM::solveBestMove();
+  EMM::commandParser();
   // EMM::getMaxScore();
 
   return 0;
