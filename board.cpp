@@ -260,11 +260,6 @@ Board* Board::move(
       if (sourceTile + val > 0) {
         newBoard->clearCompetitor(pos);
         destroyedCompetitors++;
-      } else {
-        // Add the value of the competitor back to cash since jumping over a
-        // competitor stops it from stealing from you that turn even if you
-        // don't eliminate it
-        newBoard->cash += -val;
       }
     } else if (newBoard->nonProfits[pos] && val < sourceTile) {
       newBoard->board[pos] = 0;
@@ -323,13 +318,13 @@ Board* Board::move(
   return newBoard;
 }
 
-int Board::getRandomTile(int score) {
+const Tile Board::getRandomTile(int score) {
   using std::cout;
 
   float p = (rand()/static_cast<float>(RAND_MAX));
   const float *prob_ptr = &DISTRIBUTION[0][0];
-  const int *tile_ptr = &TILES[0];
-  const int *end = TILES + TILE_TYPES;
+  const Tile *tile_ptr = &TILES[0];
+  const Tile *end = TILES + TILE_TYPES;
 
   if (score >= 100) {
     const int jumpLength = std::max(score / 100 - 1, PROBABILITY_INTERVALS-1);

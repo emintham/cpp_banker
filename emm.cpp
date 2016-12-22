@@ -306,9 +306,8 @@ float EMM::expectiminimax(Board* board, int depth) {
   for (int i=0; i<TILE_TYPES; i++) {
     int source, dest;
 
-    const int tileValue = TILES[i];
+    const Tile tile = TILES[i];
     const float probability = DISTRIBUTION[j][i];
-    const Tile tile = Tile(tileValue);
 
     float heuristicScore = EMM::bestMove(board, tile, depth-1, &source, &dest);
 

@@ -1,7 +1,8 @@
 #ifndef __CONSTANTS_H__
 #define __CONSTANTS_H__
 
-const int TILE_TYPES = 8;
+#include "tile.h"
+
 const int BOARD_SIZE = 25;
 
 const int CORNER_PENALTY = 30;
@@ -45,15 +46,28 @@ const int possibleDest[BOARD_SIZE][8] = {
 };
 
 const int PROBABILITY_INTERVALS = 6;
-const int TILES[8] = {2, 1, 0, -1, -2, -3, -4, -5};
-const float DISTRIBUTION[PROBABILITY_INTERVALS][8] = {
-  //   2,     1,     0,    -1,    -2,    -3,    -4,    -5
-  {0.436, 0.359, 0.179, 0.026, 0.000, 0.000, 0.000, 0.000}, // score < 100
-  {0.341, 0.381, 0.190, 0.088, 0.000, 0.000, 0.000, 0.000}, // score < 200
-  {0.315, 0.363, 0.196, 0.110, 0.016, 0.000, 0.000, 0.000}, // score < 300
-  {0.264, 0.333, 0.208, 0.181, 0.014, 0.000, 0.000, 0.000}, // score < 400
-  {0.258, 0.371, 0.177, 0.129, 0.065, 0.000, 0.000, 0.000}, // score < 500
-  {0.258, 0.371, 0.177, 0.129, 0.065, 0.000, 0.000, 0.000}, // else
+const int TILE_TYPES = 10;
+const Tile TILES[TILE_TYPES] = {
+  Tile(2),
+  Tile(1),
+  Tile(0),
+  Tile(-1),
+  Tile(-2),
+  Tile(-3),
+  Tile(2, nonProfit),
+  Tile(3, nonProfit),
+  Tile(0, positiveLawsuit),
+  Tile(0, negativeLawsuit)
+};
+
+const float DISTRIBUTION[PROBABILITY_INTERVALS][TILE_TYPES] = {
+  //   2,     1,     0,    -1,    -2,    -3,    .2,    .3      +,     -
+  {0.426, 0.368, 0.181, 0.025, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000}, // score < 100
+  {0.331, 0.391, 0.193, 0.085, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000}, // score < 200
+  {0.322, 0.360, 0.196, 0.106, 0.015, 0.000, 0.000, 0.000, 0.000, 0.000}, // score < 300
+  {0.195, 0.390, 0.186, 0.169, 0.025, 0.000, 0.008, 0.008, 0.008, 0.008}, // score < 400
+  {0.299, 0.322, 0.149, 0.138, 0.069, 0.011, 0.000, 0.000, 0.000, 0.011}, // score < 500
+  {0.412, 0.235, 0.059, 0.176, 0.118, 0.000, 0.000, 0.000, 0.000, 0.000}, // else
 };
 
 #endif

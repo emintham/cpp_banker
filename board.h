@@ -37,7 +37,7 @@ public:
   std::vector<std::tuple<int, int, int>> getMoveset() const;
 
   static void printMove(const int source, const int dest);
-  static int getRandomTile(int score);
+  static const Tile getRandomTile(int score);
 
   // Board modifying methods
   void addCompetitor(int pos, int value);
