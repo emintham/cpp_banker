@@ -7,7 +7,7 @@ const int BOARD_SIZE = 25;
 
 const int CORNER_PENALTY = 30;
 const int EDGE_PENALTY = 10;
-const int BANKRUPT = -1024;
+const int BANKRUPT = -1;
 
 const int NUM_CORNERS = 4;
 const int NUM_EDGES = 12;

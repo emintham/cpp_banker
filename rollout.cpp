@@ -2,8 +2,8 @@
 
 int main() {
 
-  EMM::commandParser();
-  // EMM::rollout();
+  // EMM::commandParser();
+  EMM::rollout();
 
   return 0;
 

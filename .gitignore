@@ -1,8 +1,11 @@
 banker
 banker.dSYM
+rollout
+rollout.dSYM
 callgrind*
 *.swp
 *.swo
 *.o
 tiles.txt
 test
+input

@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <time.h>
+#include <stdlib.h>
 
 #include "constants.h"
 #include "emm.h"
@@ -35,7 +36,8 @@ Board* EMM::solveBestMove(
         Board* b,
         const Tile& nextTile,
         int depth,
-        int* dist) {
+        int* dist,
+        bool verbose) {
   using std::cout;
 
   clock_t t = clock();  // Start recording
@@ -52,20 +54,30 @@ Board* EMM::solveBestMove(
 
   Board* newBoard = b->move(source, dest, nextTile);
 
-  // cout << "Next tile: " << nextTile.value << '\n';
-  cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash << '\n';
+  if (verbose) {
+    // cout << "Next tile: " << nextTile.value << '\n';
+    cout << "Score: " << newBoard->score << ", Cash: " << newBoard->cash << '\n';
 
-  Board::printMove(source, dest);
+    Board::printMove(source, dest);
 
-  cout << std::string(50, '-') << '\n';
+    cout << std::string(50, '-') << '\n';
 
-  cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
+    cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
+  }
 
   const int diff = abs(source - dest);
   *dist = diff/5 + diff%5;
 
   delete b;
   return newBoard;
+}
+
+Board* EMM::solveBestMove(
+        Board* b,
+        const Tile& nextTile,
+        int depth,
+        int* dist) {
+  return EMM::solveBestMove(b, nextTile, depth, dist, true);
 }
 
 Board* EMM::handleLawsuit(
@@ -219,8 +231,6 @@ int EMM::heuristicScore(Board *b) {
   */
 
   for (int i=0; i<BOARD_SIZE; i++) {
-    // heuristicScore += (int)b->competitors[i];
-    // if (!b->isCompetitor(i)) heuristicScore += 1;
     heuristicScore += b->competitors.size() - b->competitors.count();
   }
 
@@ -239,7 +249,10 @@ float EMM::bestMove(
         int* source,
         int* dest) {
 
-  if (depth == 0) {
+  *source = -1;
+  *dest = -1;
+
+  if (depth == 0 || b->isBankrupt()) {
     return EMM::heuristicScore(b);
   }
 
@@ -248,11 +261,9 @@ float EMM::bestMove(
   float bestScore = 0.0;
   bool isNonProfit = nextTile.tileType == nonProfit;
 
-  if (b->isBankrupt()) return BANKRUPT;
-
   auto allPossibleMoves = b->getMoveset();
 
-  if (allPossibleMoves.empty()) return BANKRUPT;
+  if (allPossibleMoves.empty()) return EMM::heuristicScore(b);
 
   for (auto &move : allPossibleMoves) {
     int s, d, dist;
@@ -277,20 +288,18 @@ float EMM::bestMove(
     delete nextBoard;
   }
 
-  if (chosenSource < 0) {
-    return BANKRUPT;
-  } else {
-    *source = chosenSource;
-    *dest = chosenDest;
+  *source = chosenSource;
+  *dest = chosenDest;
 
+  if (chosenSource < 0) {
+    return EMM::heuristicScore(b);
+  } else {
     return bestScore;
   }
 }
 
 float EMM::expectiminimax(Board* board, int depth) {
-  if (depth == 0 ) return EMM::heuristicScore(board);
-
-  if (board->isBankrupt()) return BANKRUPT;
+  if (depth == 0 || board->isBankrupt()) return EMM::heuristicScore(board);
 
   int j = 0;
 
@@ -315,4 +324,40 @@ float EMM::expectiminimax(Board* board, int depth) {
   }
 
   return expectedMaxScore;
+}
+
+int EMM::rolloutOnce(int depth) {
+  Board *b = new Board();
+
+  while (true) {
+    int dist = 10;
+    const Tile newTile = Board::getRandomTile(b->score);
+
+    do {
+      b = EMM::solveBestMove(b, newTile, depth, &dist, false);
+      // std::cout << '.';
+
+      if (!b) return 0;
+      std::cout << "Score: " << b->score << ", Cash: " << b->cash << '\n';
+      // b->print();
+
+    } while (dist > 1);
+  }
+
+  int score = b->score;
+  std::cout << "\nScore: " << b->score << ", Cash: " << b->cash << '\n';
+
+  delete b;
+  return score;
+}
+
+void EMM::rollout() {
+  const int numRollouts = 6;
+  const int depth = 6;
+
+  srand(time(0));
+
+  for (int i=0; i<numRollouts; i++) {
+    EMM::rolloutOnce(depth);
+  }
 }

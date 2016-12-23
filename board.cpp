@@ -210,7 +210,15 @@ Board* Board::move(
   Board* newBoard = new Board(*this);
 
   if (negativeLawsuits[source]) {
-    newBoard->board[dest]--;
+    if (newBoard->isCompetitor(dest)){
+      newBoard->board[dest]++;
+      if (!newBoard->board[dest]) {
+        newBoard->clearCompetitor(dest);
+      }
+    } else {
+      newBoard->board[dest]--;
+    }
+
     newBoard->negativeLawsuits[source] = false;
     newBoard->updateTimer();
     newBoard->updateBonus();
@@ -219,7 +227,12 @@ Board* Board::move(
   }
 
   if (positiveLawsuits[source]) {
-    newBoard->board[dest]++;
+    if (newBoard->isCompetitor(dest)){
+      newBoard->board[dest]--;
+    } else {
+      newBoard->board[dest]++;
+    }
+
     newBoard->positiveLawsuits[source] = false;
     newBoard->updateTimer();
     newBoard->updateBonus();
@@ -322,26 +335,21 @@ const Tile Board::getRandomTile(int score) {
   using std::cout;
 
   float p = (rand()/static_cast<float>(RAND_MAX));
-  const float *prob_ptr = &DISTRIBUTION[0][0];
-  const Tile *tile_ptr = &TILES[0];
-  const Tile *end = TILES + TILE_TYPES;
 
-  if (score >= 100) {
-    const int jumpLength = std::max(score / 100 - 1, PROBABILITY_INTERVALS-1);
-    cout << "DEBUG: Score: " << score << ", Jump: " << jumpLength << '\n';
-    prob_ptr += TILE_TYPES << jumpLength;
+  const int distribRow = std::min(score/100, PROBABILITY_INTERVALS-1);
+  int tileIndex = 0;
+
+  while (true) {
+    p -= DISTRIBUTION[distribRow][tileIndex];
+    if (p > 0) tileIndex++;
+    else break;
   }
 
-  while((p -= *prob_ptr) > 0) {
-    ++prob_ptr;
-    ++tile_ptr;
+  if (tileIndex >= TILE_TYPES) {
+    cout << "DEBUG: tileIndex = " << tileIndex << '\n';
+    return Tile(1);
   }
 
-  if (tile_ptr > end) {
-    cout << "DEBUG: past end of array!\n";
-    return 0;
-  }
-
-  return *tile_ptr;
+  return TILES[tileIndex];
 }
 

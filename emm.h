@@ -8,8 +8,11 @@ class EMM {
   static int reusedValues;
 
 public:
+  static void rollout();
+  static int rolloutOnce(int depth);
   static void commandParser();
   static Board* solveBestMove(Board *b, const Tile& nextTile, int depth, int *dist);
+  static Board* solveBestMove(Board *b, const Tile& nextTile, int depth, int *dist, bool verbose);
   static Board* handleLawsuit(std::istringstream& currentLine, std::ofstream& tileFile, Board* b, const int depth);
   static Board* handleBonus(std::istringstream& currentLine, std::ofstream& tileFile, Board* b, const int depth);
   static Board* handleNonProfit(std::istringstream& currentLine, std::ofstream& tileFile, Board* b, const int depth);
