@@ -17,7 +17,7 @@ public:
   static Board* handleBonus(std::istringstream& currentLine, std::ofstream& tileFile, Board* b, const int depth);
   static Board* handleNonProfit(std::istringstream& currentLine, std::ofstream& tileFile, Board* b, const int depth);
   static void handleDebug(std::istringstream& currentLine, std::ofstream& tileFile, Board* b);
-  static Board* handleMyTile(const int nextTile, std::ofstream& tileFile, Board* b, const int depth);
+  static Board* handleTile(const int nextTile, std::ofstream& tileFile, Board* b, const int depth);
 
 private:
   static int heuristicScore(Board *b);

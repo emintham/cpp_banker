@@ -26,7 +26,7 @@ static HeuristicCache hc;
 int hashBoard(const Board &b) {
   int h = BOARD_SIZE;
   for (int i=0; i<BOARD_SIZE; i++) {
-    h = h * 17 + b.board[i];
+    h = h * 17 + b.board[i].value;
   }
 
   return h;
@@ -148,7 +148,7 @@ void EMM::handleDebug(
   }
 }
 
-Board* EMM::handleMyTile(
+Board* EMM::handleTile(
         const int nextTile,
         std::ofstream& tileFile,
         Board* b,
@@ -159,8 +159,15 @@ Board* EMM::handleMyTile(
   // Record the tiles and score to file
   tileFile << nextTile << " " << b->score << '\n';
 
+  Tile t;
+  if (nextTile > 0) {
+    t = Tile(nextTile);
+  } else {
+    t = Tile(-nextTile, competitor);
+  }
+
   do {
-    newBoard = EMM::solveBestMove(newBoard, Tile(nextTile), depth, &dist);
+    newBoard = EMM::solveBestMove(newBoard, t, depth, &dist);
   } while (dist > 1);
 
   return newBoard;
@@ -190,7 +197,7 @@ void EMM::commandParser() {
         break;
       }
       case 'p': {
-        b->print();
+        std::cout << *b;
         break;
       }
       case '.': {
@@ -203,7 +210,7 @@ void EMM::commandParser() {
       }
       default: {
         const int nextTile = stoi(line);
-        b = EMM::handleMyTile(nextTile, myfile, b, depth);
+        b = EMM::handleTile(nextTile, myfile, b, depth);
         break;
       }
     }
@@ -231,7 +238,7 @@ int EMM::heuristicScore(Board *b) {
   */
 
   for (int i=0; i<BOARD_SIZE; i++) {
-    heuristicScore += b->competitors.size() - b->competitors.count();
+    heuristicScore += b->isCompetitor(i) ? 0 : 1;
   }
 
   /*
@@ -259,7 +266,8 @@ float EMM::bestMove(
   int chosenSource = -1;
   int chosenDest = -1;
   float bestScore = 0.0;
-  bool isNonProfit = nextTile.tileType == nonProfit;
+  const bool isNonProfit = nextTile.tileType == nonProfit;
+  const bool isCompetitor = nextTile.tileType == competitor;
 
   auto allPossibleMoves = b->getMoveset();
 
@@ -271,7 +279,7 @@ float EMM::bestMove(
 
     // Do not recommend moves where the competitor or nonProfit ends up in the
     // corner
-    bool badTile = nextTile.value <= 0 || isNonProfit;
+    const bool badTile = isNonProfit || isCompetitor;
     bool isCorner = s == 0 || s == 4 || s == 20 || s == 24;
 
     if (badTile && isCorner) continue;
@@ -339,7 +347,7 @@ int EMM::rolloutOnce(int depth) {
 
       if (!b) return 0;
       std::cout << "Score: " << b->score << ", Cash: " << b->cash << '\n';
-      // b->print();
+      // std::cout << *b;
 
     } while (dist > 1);
   }

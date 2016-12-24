@@ -1,41 +1,31 @@
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <tuple>
-#include <iomanip>
 #include <vector>
 
 #include "constants.h"
 #include "board.h"
 
-void Board::print() const {
-  using std::cout;
-
+std::ostream& operator<<(std::ostream& os, const Board b) {
   for (int i=0; i<BOARD_SIZE; i++) {
     if (i != 0 && i % 5 == 0) {
-      cout << '\n';
+      os << '\n';
     }
 
-    if (this->isCompetitor(i)) {
-      if (board[i] == 0) {
-        cout << "(0)";
-      } else {
-        cout << ' ' << board[i];
-      }
-    } else if (negativeLawsuits[i]) {
-      cout << " - ";
-    } else if (positiveLawsuits[i]) {
-      cout << " + ";
+    if (b.bonus[i]) {
+      os << '$' << b.board[i].value;
     } else {
-      const int bonusVal = bonus[i];
-
-      cout << (bonusVal ? '$' : ' ') << (bonusVal ? bonusVal : board[i]);
-      cout << (nonProfits[i] ? '*' : ' ');
+      os << b.board[i];
     }
   }
 
-  cout << '\n';
+  os << '\n';
+
+  return os;
 }
 
 void Board::printMove(const int source, const int dest) {
@@ -76,22 +66,49 @@ void Board::printCompetitorTimers() const {
 }
 
 bool Board::isEmpty(int position) const {
-  return !board[position] && !this->isCompetitor(position);
+  return !board[position].value && !this->isCompetitor(position) && \
+      !this->isLawsuit(position);
 }
 
 bool Board::isCompetitor(int position) const {
-  return competitors.test(position);
+  return board[position].tileType == competitor;
 }
 
 bool Board::isBankrupt() const {
   return cash < 0;
 }
 
+bool Board::isPosLawsuit(int pos) const {
+  return board[pos].tileType == positiveLawsuit;
+}
+
+bool Board::isNegLawsuit(int pos) const {
+  return board[pos].tileType == negativeLawsuit;
+}
+
+bool Board::isLawsuit(int pos) const {
+  return this->isPosLawsuit(pos) || this->isNegLawsuit(pos);
+}
+
+bool Board::isNonProfit(int pos) const {
+  return board[pos].tileType == nonProfit;
+}
+
+int Board::numCompetitors() const {
+  int total = 0;
+
+  for (auto& tile: board) {
+    total += tile.tileType == competitor ? 1 : 0;
+  }
+
+  return total;
+}
+
 int Board::competitorCosts() const {
   int total = 0;
 
-  for (auto& num: board) {
-    total += num > 0 ? 0 : num;
+  for (auto& tile: board) {
+    total += tile.tileType == competitor ? tile.value : 0;
   }
 
   return total;
@@ -100,27 +117,30 @@ int Board::competitorCosts() const {
 std::vector<std::tuple<int, int, int>> Board::getMoveset() const {
   std::vector<std::tuple<int, int, int>> allPossibleMoves;
 
-  for (int i=0; i<BOARD_SIZE; i++) {
-    if (board[i] <= 0 || nonProfits[i]) continue;
+  for (int src=0; src<BOARD_SIZE; src++) {
+    if (this->isEmpty(src) || this->isNonProfit(src) || this->isCompetitor(src)) {
+      continue;
+    }
 
-    for (const int& j : possibleDest[i]) {
-      int diff = abs(i-j);
-      int dist = diff/5 + diff%5;
+    for (const int& dest : possibleDest[src]) {
+      const int diff = abs(src-dest);
+      const int dist = diff/5 + diff%5;
 
-      // If source is a lawsuit, it can only walk to an adjacent tile
-      if (negativeLawsuits[i] || positiveLawsuits[i]) {
-        if (dist == 1 && !this->isEmpty(j)) {
-          allPossibleMoves.push_back(std::make_tuple(i, j, dist));
+      // If source is a lawsuit, it can only walk to an adjacent tile if it
+      // isn't also a lawsuit
+      if (this->isLawsuit(src)) {
+        if (dist == 1 && !this->isEmpty(dest) && !this->isLawsuit(dest)) {
+          allPossibleMoves.push_back(std::make_tuple(src, dest, dist));
         }
 
         continue;
       }
 
-      bool walk = dist == 1 && !nonProfits[j] && (this->isEmpty(j) || board[i] == board[j]);
-      bool jump = dist != 1 && board[i] == board[j] && !nonProfits[j];
+      bool walk = dist == 1 && (this->isEmpty(dest) || board[src] == board[dest] || this->isLawsuit(dest));
+      bool jump = dist != 1 && board[src] == board[dest];
 
-      if (walk || jump) {
-        allPossibleMoves.push_back(std::make_tuple(i, j, dist));
+      if (!this->isNonProfit(dest) && (walk || jump)) {
+        allPossibleMoves.push_back(std::make_tuple(src, dest, dist));
       }
     }
   }
@@ -128,15 +148,13 @@ std::vector<std::tuple<int, int, int>> Board::getMoveset() const {
   return allPossibleMoves;
 }
 
-void Board::addCompetitor(int pos, int value) {
-  board[pos] = value;
-  competitors[pos] = 1;
-  competitorTimers[pos] = 19;
+void Board::addCompetitor(int pos, Tile tile) {
+  board[pos] = tile;
+  competitorTimers[pos] = 17;
 }
 
 void Board::clearCompetitor(int pos) {
-  board[pos] = 0;
-  competitors[pos] = 0;
+  board[pos] = Tile();
   competitorTimers[pos] = 0;
 }
 
@@ -144,31 +162,13 @@ void Board::addBonus(int pos, int value) {
   bonus[pos] = value;
 }
 
-void Board::addLawsuit(int pos, TileType tileType) {
-  switch(tileType) {
-    case negativeLawsuit:
-      negativeLawsuits[pos] = true;
-      break;
-    case positiveLawsuit:
-      positiveLawsuits[pos] = true;
-      break;
-    default:
-      break;
-  }
-}
-
-void Board::addNonProfit(int pos, int value) {
-  nonProfits[pos] = true;
-  board[pos] = value;
-}
-
 void Board::updateTimer() {
   for (int i=0; i<BOARD_SIZE; i++) {
     if (!this->isCompetitor(i)) continue;
 
     if (!competitorTimers[i]) {
-      board[i]--;
-      competitorTimers[i] = 20;
+      board[i] = Tile(board[i].value + 1, competitor);
+      competitorTimers[i] = 18;
       continue;
     }
 
@@ -178,15 +178,134 @@ void Board::updateTimer() {
 
 void Board::updateBonus() {
   for (int i=0; i<BOARD_SIZE; i++) {
-    if (bonus[i]) {
-      bonus[i]--;
-    }
+    if (bonus[i]) bonus[i]--;
   }
 }
 
+Board* Board::walk(
+        const int source,
+        const int dest,
+        const Tile& nextTile) const {
+  const int sourceTile = this->board[source].value;
+  const int destTile = this->board[dest].value;
+
+  Board* newBoard = new Board(*this);
+
+  // Moving lawsuit directly does not change cash or score
+  if (this->isLawsuit(source)) {
+    auto oldTile = newBoard->board[dest];
+
+    if (this->isNegLawsuit(source)) {
+      newBoard->board[dest] = Tile(oldTile.value - 1, oldTile.tileType);
+    } else {
+      newBoard->board[dest] = Tile(oldTile.value + 1, oldTile.tileType);
+    }
+
+    if (newBoard->isCompetitor(dest) && newBoard->board[dest].value < 0) {
+      newBoard->clearCompetitor(dest);
+    }
+
+    newBoard->board[source] = Tile();
+
+    return newBoard;
+  }
+
+  int newDest, cashDelta, scoreDelta;
+
+  if (destTile == sourceTile) {
+    newDest = sourceTile + 1;
+    cashDelta = newDest;
+    scoreDelta = newDest;
+  } else {
+
+    switch (board[dest].tileType) {
+      case negativeLawsuit:
+        newDest = sourceTile - 1;
+        break;
+      case positiveLawsuit:
+        newDest = sourceTile + 1;
+        break;
+      default:
+        newDest = sourceTile;
+    }
+
+    const auto bonusValue = newBoard->bonus[dest];
+
+    if (bonusValue) {
+      cashDelta = bonusValue;
+      scoreDelta = bonusValue;
+      newBoard->bonus[dest] = 0;
+    } else if (newBoard->isLawsuit(dest)) {
+      cashDelta = 0;
+      scoreDelta = 0;
+    } else {
+      cashDelta = -1;
+      scoreDelta = 0;
+    }
+  }
+
+  // Competitor costs must be calculated before adding the new competitor
+  newBoard->cash += cashDelta;
+  newBoard->cash -= newBoard->competitorCosts();
+
+  if (nextTile.tileType == competitor) {
+    newBoard->addCompetitor(source, nextTile);
+  } else {
+    newBoard->board[source] = nextTile;
+  }
+
+  newBoard->board[dest] = Tile(newDest);
+  newBoard->score += scoreDelta;
+
+  return newBoard;
+}
+
+Board* Board::jump(
+        const int source,
+        const int dest,
+        const Tile& nextTile,
+        const int start,
+        const int dist,
+        const bool horizontalMove) const {
+  const int sourceTile = this->board[source].value;
+
+  Board* newBoard = new Board(*this);
+
+  newBoard->board[source] = Tile();
+  newBoard->board[dest] = Tile(sourceTile + 1);
+  newBoard->cash += sourceTile + 1;
+  newBoard->score += sourceTile + 1;
+
+  int destroyedTiles = 0;
+  for (int i=1; i<dist; i++) {
+    const int pos = horizontalMove ? start + i : (start + i*5);
+    const int val = newBoard->board[pos].value;
+
+    if (!newBoard->isCompetitor(pos) && !newBoard->isNonProfit(pos)) continue;
+
+    if (sourceTile > val) {
+      if (newBoard->isCompetitor(pos)) newBoard->clearCompetitor(pos);
+      else newBoard->board[pos] = Tile();
+
+      destroyedTiles++;
+    }
+  }
+
+  if (destroyedTiles > 1) {
+    const int comboBonus = 1 << destroyedTiles;
+    newBoard->score += comboBonus;
+    newBoard->cash += comboBonus;
+  }
+
+  // Competitor costs must come after competitors are eliminated
+  newBoard->cash -= newBoard->competitorCosts();
+
+  return newBoard;
+}
+
 Board* Board::move(
-        int source,
-        int dest,
+        const int source,
+        const int dest,
         const Tile& nextTile) {
   int start, dist;
 
@@ -194,8 +313,6 @@ Board* Board::move(
   const int y1 = source / 5;
   const int x2 = dest % 5;
   const int y2 = dest / 5;
-  const int sourceTile = this->board[source];
-  const int destTile = this->board[dest];
 
   bool horizontalMove = y1 == y2;
 
@@ -207,124 +324,10 @@ Board* Board::move(
     dist = abs(y1 - y2);
   }
 
-  Board* newBoard = new Board(*this);
+  Board* newBoard = (dist == 1) ? \
+                    this->walk(source, dest, nextTile) : \
+                    this->jump(source, dest, nextTile, start, dist, horizontalMove);
 
-  if (negativeLawsuits[source]) {
-    if (newBoard->isCompetitor(dest)){
-      newBoard->board[dest]++;
-      if (!newBoard->board[dest]) {
-        newBoard->clearCompetitor(dest);
-      }
-    } else {
-      newBoard->board[dest]--;
-    }
-
-    newBoard->negativeLawsuits[source] = false;
-    newBoard->updateTimer();
-    newBoard->updateBonus();
-
-    return newBoard;
-  }
-
-  if (positiveLawsuits[source]) {
-    if (newBoard->isCompetitor(dest)){
-      newBoard->board[dest]--;
-    } else {
-      newBoard->board[dest]++;
-    }
-
-    newBoard->positiveLawsuits[source] = false;
-    newBoard->updateTimer();
-    newBoard->updateBonus();
-
-    return newBoard;
-  }
-
-  int newDest, cashDelta, scoreDelta, newSource;
-
-  if (destTile == sourceTile) {
-    newDest = sourceTile + 1;
-    cashDelta = newDest;
-    scoreDelta = newDest;
-  } else {
-
-    if (negativeLawsuits[dest]) {
-      newDest = sourceTile - 1;
-      newBoard->negativeLawsuits[dest] = false;
-    } else if (positiveLawsuits[dest]) {
-      newDest = sourceTile + 1;
-      newBoard->positiveLawsuits[dest] = false;
-    } else {
-      newDest = sourceTile;
-    }
-
-    cashDelta = -1;
-    scoreDelta = 0;
-  }
-
-  newSource = dist == 1 ? nextTile.value : 0;
-
-  int destroyedCompetitors = 0;
-  for (int i=1; i<dist; i++) {
-    const int pos = horizontalMove ? start + i : (start + i*5);
-    const int val = newBoard->board[pos];
-
-    if (newBoard->isCompetitor(pos)) {
-      if (sourceTile + val > 0) {
-        newBoard->clearCompetitor(pos);
-        destroyedCompetitors++;
-      }
-    } else if (newBoard->nonProfits[pos] && val < sourceTile) {
-      newBoard->board[pos] = 0;
-      newBoard->nonProfits[pos] = false;
-      destroyedCompetitors++;
-    }
-  }
-
-  if (destroyedCompetitors > 1) {
-    const int delta = 1 << destroyedCompetitors;
-    newBoard->score += delta;
-    newBoard->cash += delta;
-  }
-
-  newBoard->cash += newBoard->competitorCosts() + cashDelta;
-
-  newBoard->board[source] = newSource;
-  newBoard->board[dest] = newDest;
-  newBoard->score += scoreDelta;
-
-  if (dist == 1) {
-    switch (nextTile.tileType) {
-      case nonProfit:
-        newBoard->nonProfits[source] = true;
-        break;
-
-      case negativeLawsuit:
-        newBoard->addLawsuit(source, negativeLawsuit);
-        break;
-
-      case positiveLawsuit:
-        newBoard->addLawsuit(source, positiveLawsuit);
-        break;
-
-      default:
-        if (nextTile.value <= 0) {
-          newBoard->addCompetitor(source, nextTile.value);
-        }
-    }
-
-    const auto bonusValue = newBoard->bonus[dest];
-
-    if (bonusValue) {
-      // We add 1 because you are not charged for the new tile if moving to a
-      // bonus square
-      newBoard->cash += bonusValue + 1;
-      newBoard->score += bonusValue;
-      newBoard->bonus[dest] = 0;
-    }
-  }
-
-  // This has to happen after the adding the competitor and bonus calculations
   newBoard->updateBonus();
   newBoard->updateTimer();
 

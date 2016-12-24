@@ -2,9 +2,9 @@
 #define __BOARD_H__
 
 #include <array>
-#include <bitset>
 #include <tuple>
 #include <vector>
+#include <ostream>
 
 #include "constants.h"
 #include "tile.h"
@@ -12,26 +12,26 @@
 class Board {
 
 public:
-  std::array<int, BOARD_SIZE> board = {0, 0, 0, 0, 0,
-                                       0, 0, 0, 0, 0,
-                                       0, 0, 1, 0, 0,
-                                       0, 0, 0, 0, 0,
-                                       0, 0, 0, 0, 0};
-  std::bitset<BOARD_SIZE> competitors;
+  std::array<Tile, BOARD_SIZE> board = {Tile(0), Tile(0), Tile(0), Tile(0), Tile(0),
+                                        Tile(0), Tile(0), Tile(0), Tile(0), Tile(0),
+                                        Tile(0), Tile(0), Tile(1), Tile(0), Tile(0),
+                                        Tile(0), Tile(0), Tile(0), Tile(0), Tile(0),
+                                        Tile(0), Tile(0), Tile(0), Tile(0), Tile(0)};
   int competitorTimers[BOARD_SIZE] = {0};
   int bonus[BOARD_SIZE] = {0};
-  bool negativeLawsuits[BOARD_SIZE] = {false};
-  bool positiveLawsuits[BOARD_SIZE] = {false};
-  bool nonProfits[BOARD_SIZE] = {false};
   int score = 10;
   int cash = 10;
 
   // ----- Methods ----------
   // Util methods
-  void print() const;
   void printCompetitorTimers() const;
   bool isEmpty(int position) const;
+  bool isLawsuit(int position) const;
+  bool isPosLawsuit(int position) const;
+  bool isNegLawsuit(int position) const;
+  bool isNonProfit(int position) const;
   bool isCompetitor(int position) const;
+  int numCompetitors() const;
   bool isBankrupt() const;
   int competitorCosts() const;
   std::vector<std::tuple<int, int, int>> getMoveset() const;
@@ -40,16 +40,18 @@ public:
   static const Tile getRandomTile(int score);
 
   // Board modifying methods
-  void addCompetitor(int pos, int value);
+  void addCompetitor(int pos, Tile tile);
   void clearCompetitor(int pos);
   void addBonus(int pos, int value);
-  void addLawsuit(int pos, TileType tileType);
-  void addNonProfit(int pos, int value);
-  Board* move(int source, int dest, const Tile& nextTile);
+  Board* move(const int source, const int dest, const Tile& nextTile);
+
+  friend std::ostream& operator<<(std::ostream& os, const Board b);
 
 private:
   void updateTimer();
   void updateBonus();
+  Board* walk(const int source, const int dest, const Tile& nextTile) const;
+  Board* jump(const int source, const int dest, const Tile& nextTile, const int start, const int dist, const bool horizontalJump) const;
 };
 
 #endif
