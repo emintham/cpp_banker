@@ -17,6 +17,7 @@
 // Initialize static member variables
 int EMM::reusedValues = 0;
 bool EMM::markReuse = true;
+unsigned long EMM::leafNodesExplored = 0;
 
 
 // Cache for reused heuristic values
@@ -251,6 +252,7 @@ float EMM::bestMove(
   *dest = -1;
 
   if (depth == 0 || b->isBankrupt()) {
+    leafNodesExplored++;
     return EMM::heuristicScore(b);
   }
 
@@ -262,7 +264,10 @@ float EMM::bestMove(
 
   auto allPossibleMoves = b->getMoveset();
 
-  if (allPossibleMoves.empty()) return EMM::heuristicScore(b);
+  if (allPossibleMoves.empty()) {
+    leafNodesExplored++;
+    return EMM::heuristicScore(b);
+  }
 
   for (auto &move : allPossibleMoves) {
     int s, d, dist;
@@ -289,6 +294,7 @@ float EMM::bestMove(
   *dest = chosenDest;
 
   if (chosenSource < 0) {
+    leafNodesExplored++;
     return EMM::heuristicScore(b);
   } else {
     return bestScore;
@@ -296,7 +302,10 @@ float EMM::bestMove(
 }
 
 float EMM::expectiminimax(const BoardPtr& board, int depth) {
-  if (depth == 0 || board->isBankrupt()) return EMM::heuristicScore(board);
+  if (depth == 0 || board->isBankrupt()) {
+    leafNodesExplored++;
+    return EMM::heuristicScore(board);
+  }
 
   int j = 0;
 
