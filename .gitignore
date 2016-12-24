@@ -1,9 +1,8 @@
 banker
-banker.dSYM
 rollout
-rollout.dSYM
 test
-test.dSYM
+performanceTest
+*.dSYM
 callgrind*
 *.swp
 *.swo

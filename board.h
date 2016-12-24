@@ -2,12 +2,17 @@
 #define __BOARD_H__
 
 #include <array>
+#include <memory>
+#include <ostream>
 #include <tuple>
 #include <vector>
-#include <ostream>
 
 #include "constants.h"
 #include "tile.h"
+
+class Board;
+
+typedef std::shared_ptr<Board> BoardPtr;
 
 class Board {
 

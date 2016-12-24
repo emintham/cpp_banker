@@ -14,5 +14,8 @@ rollout: $(SRCS) rollout.cpp
 test: board.cpp test_main.cpp test_board.cpp
 	$(CC) $(CFLAGS) board.cpp test_board.cpp test_main.cpp -o $@
 
+performanceTest: $(SRCS) performanceTest.cpp
+	$(CC) $(CFLAGS) $(SRCS) performanceTest.cpp -o $@
+
 clean:
 	$(RM) banker rollout test callgrind.out.*
