@@ -95,13 +95,7 @@ bool Board::isNonProfit(int pos) const {
 }
 
 int Board::numCompetitors() const {
-  int total = 0;
-
-  for (auto& tile: board) {
-    total += tile.tileType == competitor ? 1 : 0;
-  }
-
-  return total;
+  return competitors;
 }
 
 int Board::competitorCosts() const {
@@ -151,11 +145,13 @@ std::vector<std::tuple<int, int, int>> Board::getMoveset() const {
 void Board::addCompetitor(int pos, Tile tile) {
   board[pos] = tile;
   competitorTimers[pos] = 17;
+  competitors++;
 }
 
 void Board::clearCompetitor(int pos) {
   board[pos] = Tile();
   competitorTimers[pos] = 0;
+  competitors--;
 }
 
 void Board::addBonus(int pos, int value) {

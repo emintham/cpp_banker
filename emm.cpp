@@ -235,18 +235,12 @@ int EMM::heuristicScore(Board *b) {
     }
     return it->second + b->cash + b->score;
   }
-  */
 
-  for (int i=0; i<BOARD_SIZE; i++) {
-    heuristicScore += b->isCompetitor(i) ? 0 : 1;
-  }
-
-  /*
   // Add to hashtable
   hc[key] = heuristicScore;
   */
 
-  return heuristicScore + b->cash + b->score;
+  return heuristicScore + b->cash + b->score + BOARD_SIZE - b->numCompetitors();
 }
 
 float EMM::bestMove(

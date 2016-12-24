@@ -48,6 +48,8 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const Board b);
 
 private:
+  int competitors = 0;
+
   void updateTimer();
   void updateBonus();
   Board* walk(const int source, const int dest, const Tile& nextTile) const;
