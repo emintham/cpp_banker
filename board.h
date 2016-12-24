@@ -48,7 +48,7 @@ public:
   void addCompetitor(int pos, Tile tile);
   void clearCompetitor(int pos);
   void addBonus(int pos, int value);
-  Board* move(const int source, const int dest, const Tile& nextTile);
+  BoardPtr move(const int source, const int dest, const Tile& nextTile);
 
   friend std::ostream& operator<<(std::ostream& os, const Board b);
 
@@ -57,8 +57,8 @@ private:
 
   void updateTimer();
   void updateBonus();
-  Board* walk(const int source, const int dest, const Tile& nextTile) const;
-  Board* jump(const int source, const int dest, const Tile& nextTile, const int start, const int dist, const bool horizontalJump) const;
+  BoardPtr walk(const int source, const int dest, const Tile& nextTile) const;
+  BoardPtr jump(const int source, const int dest, const Tile& nextTile, const int start, const int dist, const bool horizontalJump) const;
 };
 
 #endif

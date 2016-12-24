@@ -1,7 +1,7 @@
 #include <algorithm>
+#include <iostream>
 #include <iterator>
 #include <tuple>
-#include <iostream>
 
 #include "catch.hpp"
 
@@ -9,9 +9,8 @@
 #include "board.h"
 #include "tile.h"
 
-
 TEST_CASE("Board initialization", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   REQUIRE(b->score == 10);
   REQUIRE(b->cash == 10);
@@ -30,12 +29,10 @@ TEST_CASE("Board initialization", "[Board]") {
   }
 
   REQUIRE(b->numCompetitors() == 0);
-
-  delete b;
 }
 
 TEST_CASE("isEmpty", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   for (int i=0; i<BOARD_SIZE; i++) {
     if (i == 12) {
@@ -47,12 +44,10 @@ TEST_CASE("isEmpty", "[Board]") {
 
   b->board[0] = Tile(0, competitor);
   REQUIRE(!b->isEmpty(0));
-
-  delete b;
 }
 
 TEST_CASE("isCompetitor", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   for (int i=0; i<BOARD_SIZE; i++) {
     REQUIRE(!b->isCompetitor(i));
@@ -60,12 +55,10 @@ TEST_CASE("isCompetitor", "[Board]") {
 
   b->board[0] = Tile(0, competitor);
   REQUIRE(b->isCompetitor(0));
-
-  delete b;
 }
 
 TEST_CASE("isBankrupt", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   REQUIRE(!b->isBankrupt());
 
@@ -74,12 +67,10 @@ TEST_CASE("isBankrupt", "[Board]") {
 
   b->cash = -1;
   REQUIRE(b->isBankrupt());
-
-  delete b;
 }
 
 TEST_CASE("competitorCosts", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   REQUIRE(b->competitorCosts() == 0);
 
@@ -98,8 +89,6 @@ TEST_CASE("competitorCosts", "[Board]") {
   }
 
   REQUIRE(b->competitorCosts() == -15);
-
-  delete b;
 }
 
 /*
@@ -107,7 +96,7 @@ TEST_CASE("competitorCosts", "[Board]") {
  *    Test that a given board has moveset equal to the expected move set.
  */
 void REQUIRE_MOVESET_EQUAL(
-        Board *b,
+        BoardPtr b,
         std::vector<std::tuple<int, int, int>> expectedMoveset) {
 
   auto moveset = b->getMoveset();
@@ -123,7 +112,7 @@ void REQUIRE_MOVESET_EQUAL(
 }
 
 TEST_CASE("getMoveset", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   // --------------------------------------------------------------------------
   // Case A: 1 tile, 4 walks
@@ -157,12 +146,10 @@ TEST_CASE("getMoveset", "[Board]") {
   };
 
   REQUIRE_MOVESET_EQUAL(b, expectedMovesetB);
-
-  delete b;
 }
 
 TEST_CASE("addCompetitor", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   REQUIRE(b->competitorCosts() == 0);
 
@@ -173,12 +160,10 @@ TEST_CASE("addCompetitor", "[Board]") {
   b->addCompetitor(5, Tile(2, competitor));
   REQUIRE(b->isCompetitor(5));
   REQUIRE(b->competitorCosts() == 3);
-
-  delete b;
 }
 
 TEST_CASE("clearCompetitor", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   b->addCompetitor(0, Tile(1, competitor));
   b->addCompetitor(5, Tile(2, competitor));
@@ -194,21 +179,17 @@ TEST_CASE("clearCompetitor", "[Board]") {
   b->clearCompetitor(5);
   REQUIRE(!b->isCompetitor(0));
   REQUIRE(!b->isCompetitor(5));
-
-  delete b;
 }
 
 TEST_CASE("addBonus", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   b->addBonus(0, 5);
   REQUIRE(b->bonus[0] == 5);
-
-  delete b;
 }
 
 TEST_CASE("bonus is decreased after each move", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   b->addBonus(0, 5);
   REQUIRE(b->bonus[0] == 5);
@@ -220,14 +201,10 @@ TEST_CASE("bonus is decreased after each move", "[Board]") {
   auto b3 = b2->move(12, 11, Tile(2));
   REQUIRE(b3->bonus[0] == 3);
   REQUIRE(b3->bonus[1] == 9);
-
-  delete b;
-  delete b2;
-  delete b3;
 }
 
 TEST_CASE("bonus is added to cash", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
   const int bonusVal = 5;
 
   b->addBonus(11, bonusVal);
@@ -235,13 +212,10 @@ TEST_CASE("bonus is added to cash", "[Board]") {
 
   auto b2 = b->move(12, 11, Tile(1));
   REQUIRE(b2->cash == b->cash + bonusVal);
-
-  delete b;
-  delete b2;
 }
 
 TEST_CASE("Lawsuits", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   b->board[11] = Tile(0, positiveLawsuit);
   REQUIRE(b->isPosLawsuit(11));
@@ -264,14 +238,10 @@ TEST_CASE("Lawsuits", "[Board]") {
   REQUIRE(b3->board[12] == 1);
   REQUIRE(b3->board[13] == 0);
   REQUIRE(!b3->isNegLawsuit(13));
-
-  delete b;
-  delete b2;
-  delete b3;
 }
 
 TEST_CASE("nonProfit is not a valid dest", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   REQUIRE(b->getMoveset().size() == 4);
 
@@ -282,12 +252,10 @@ TEST_CASE("nonProfit is not a valid dest", "[Board]") {
   // Non Profit next to tile blocks it
   b->board[11] = Tile(1, nonProfit);
   REQUIRE(b->getMoveset().size() == 3);
-
-  delete b;
 }
 
 TEST_CASE("jump", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   b->board[10] = Tile(1);
 
@@ -325,14 +293,10 @@ TEST_CASE("jump", "[Board]") {
   const int comboBonus = 4;
   REQUIRE(b3->cash == b2->cash + fusionBonus + comboBonus);
   REQUIRE(b3->score == b2->score + fusionBonus + comboBonus);
-
-  delete b;
-  delete b2;
-  delete b3;
 }
 
 TEST_CASE("walk", "[Board]") {
-  Board *b = new Board();
+  BoardPtr b (new Board());
 
   b->board[11] = Tile(1);
 
@@ -396,11 +360,4 @@ TEST_CASE("walk", "[Board]") {
   REQUIRE(b6->board[5] == Tile(3));  // Tile decreased by 1
   REQUIRE(b6->cash == b5->cash);     // Cash unchanged
   REQUIRE(b6->score == b5->score);   // Score unchanged
-
-  delete b;
-  delete b2;
-  delete b3;
-  delete b4;
-  delete b5;
-  delete b6;
 }

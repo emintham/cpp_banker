@@ -11,18 +11,18 @@ public:
   static void rollout();
   static int rolloutOnce(int depth);
   static void commandParser();
-  static Board* solveBestMove(Board *b, const Tile& nextTile, int depth, int *dist);
-  static Board* solveBestMove(Board *b, const Tile& nextTile, int depth, int *dist, bool verbose);
-  static Board* handleLawsuit(std::istringstream& currentLine, std::ofstream& tileFile, Board* b, const int depth);
-  static Board* handleBonus(std::istringstream& currentLine, std::ofstream& tileFile, Board* b, const int depth);
-  static Board* handleNonProfit(std::istringstream& currentLine, std::ofstream& tileFile, Board* b, const int depth);
-  static void handleDebug(std::istringstream& currentLine, std::ofstream& tileFile, Board* b);
-  static Board* handleTile(const int nextTile, std::ofstream& tileFile, Board* b, const int depth);
+  static BoardPtr solveBestMove(const BoardPtr& b, const Tile& nextTile, int depth, int *dist);
+  static BoardPtr solveBestMove(const BoardPtr& b, const Tile& nextTile, int depth, int *dist, bool verbose);
+  static BoardPtr handleLawsuit(std::istringstream& currentLine, std::ofstream& tileFile, const BoardPtr& b, const int depth);
+  static BoardPtr handleBonus(std::istringstream& currentLine, std::ofstream& tileFile, const BoardPtr& b, const int depth);
+  static BoardPtr handleNonProfit(std::istringstream& currentLine, std::ofstream& tileFile, const BoardPtr& b, const int depth);
+  static void handleDebug(std::istringstream& currentLine, std::ofstream& tileFile, const BoardPtr& b);
+  static BoardPtr handleTile(const int nextTile, std::ofstream& tileFile, const BoardPtr& b, const int depth);
 
 private:
-  static int heuristicScore(Board *b);
-  static float bestMove(Board *b, const Tile& nextTile, int depth, int* source, int* dest);
-  static float expectiminimax(Board* board, int depth);
+  static int heuristicScore(const BoardPtr& b);
+  static float bestMove(const BoardPtr& b, const Tile& nextTile, int depth, int* source, int* dest);
+  static float expectiminimax(const BoardPtr& board, int depth);
 };
 
 #endif

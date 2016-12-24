@@ -178,14 +178,14 @@ void Board::updateBonus() {
   }
 }
 
-Board* Board::walk(
+BoardPtr Board::walk(
         const int source,
         const int dest,
         const Tile& nextTile) const {
   const int sourceTile = this->board[source].value;
   const int destTile = this->board[dest].value;
 
-  Board* newBoard = new Board(*this);
+   BoardPtr newBoard = std::make_shared<Board>(*this);
 
   // Moving lawsuit directly does not change cash or score
   if (this->isLawsuit(source)) {
@@ -256,7 +256,7 @@ Board* Board::walk(
   return newBoard;
 }
 
-Board* Board::jump(
+BoardPtr Board::jump(
         const int source,
         const int dest,
         const Tile& nextTile,
@@ -265,7 +265,7 @@ Board* Board::jump(
         const bool horizontalMove) const {
   const int sourceTile = this->board[source].value;
 
-  Board* newBoard = new Board(*this);
+  BoardPtr newBoard = std::make_shared<Board>(*this);
 
   newBoard->board[source] = Tile();
   newBoard->board[dest] = Tile(sourceTile + 1);
@@ -299,7 +299,7 @@ Board* Board::jump(
   return newBoard;
 }
 
-Board* Board::move(
+BoardPtr Board::move(
         const int source,
         const int dest,
         const Tile& nextTile) {
@@ -320,7 +320,7 @@ Board* Board::move(
     dist = abs(y1 - y2);
   }
 
-  Board* newBoard = (dist == 1) ? \
+  auto newBoard = (dist == 1) ? \
                     this->walk(source, dest, nextTile) : \
                     this->jump(source, dest, nextTile, start, dist, horizontalMove);
 

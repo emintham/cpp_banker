@@ -32,8 +32,8 @@ int hashBoard(const Board &b) {
   return h;
 }
 
-Board* EMM::solveBestMove(
-        Board* b,
+BoardPtr EMM::solveBestMove(
+        const BoardPtr& b,
         const Tile& nextTile,
         int depth,
         int* dist,
@@ -52,7 +52,7 @@ Board* EMM::solveBestMove(
 
   t = clock() - t;      // End recording
 
-  Board* newBoard = b->move(source, dest, nextTile);
+  auto newBoard = b->move(source, dest, nextTile);
 
   if (verbose) {
     // cout << "Next tile: " << nextTile.value << '\n';
@@ -68,26 +68,25 @@ Board* EMM::solveBestMove(
   const int diff = abs(source - dest);
   *dist = diff/5 + diff%5;
 
-  delete b;
   return newBoard;
 }
 
-Board* EMM::solveBestMove(
-        Board* b,
+BoardPtr EMM::solveBestMove(
+        const BoardPtr& b,
         const Tile& nextTile,
         int depth,
         int* dist) {
   return EMM::solveBestMove(b, nextTile, depth, dist, true);
 }
 
-Board* EMM::handleLawsuit(
+BoardPtr EMM::handleLawsuit(
         std::istringstream& currentLine,
         std::ofstream& tileFile,
-        Board* b,
+        const BoardPtr& b,
         const int depth) {
   char c;
   int dist = 0;
-  Board* newBoard = b;
+  BoardPtr newBoard = b;
 
   currentLine >> c;
   const Tile tile = Tile(0, (c == '-') ? negativeLawsuit : positiveLawsuit);
@@ -101,10 +100,10 @@ Board* EMM::handleLawsuit(
   return newBoard;
 }
 
-Board* EMM::handleBonus(
+BoardPtr EMM::handleBonus(
         std::istringstream& currentLine,
         std::ofstream& tileFile,
-        Board* b,
+        const BoardPtr& b,
         const int depth) {
   int cash, pos;
 
@@ -117,13 +116,13 @@ Board* EMM::handleBonus(
   return b;
 }
 
-Board* EMM::handleNonProfit(
+BoardPtr EMM::handleNonProfit(
         std::istringstream& currentLine,
         std::ofstream& tileFile,
-        Board* b,
+        const BoardPtr& b,
         const int depth) {
   int nonProfitValue, dist;
-  Board* newBoard = b;
+  BoardPtr newBoard = b;
 
   currentLine >> nonProfitValue;
 
@@ -139,7 +138,7 @@ Board* EMM::handleNonProfit(
 void EMM::handleDebug(
         std::istringstream& currentLine,
         std::ofstream& tileFile,
-        Board* b) {
+        const BoardPtr& b) {
   std::string command;
   currentLine >> command;
 
@@ -148,13 +147,13 @@ void EMM::handleDebug(
   }
 }
 
-Board* EMM::handleTile(
+BoardPtr EMM::handleTile(
         const int nextTile,
         std::ofstream& tileFile,
-        Board* b,
+        const BoardPtr& b,
         const int depth) {
   int dist;
-  Board* newBoard = b;
+  BoardPtr newBoard = b;
 
   // Record the tiles and score to file
   tileFile << nextTile << " " << b->score << '\n';
@@ -179,7 +178,7 @@ void EMM::commandParser() {
   std::ofstream myfile ("tiles.txt", std::ios_base::app);
   std::string line;
 
-  Board* b = new Board();
+  BoardPtr b = std::make_shared<Board>();
 
   while (getline(std::cin, line)){
     std::istringstream iss (line);
@@ -216,12 +215,10 @@ void EMM::commandParser() {
     }
   }
 
-  delete b;
-
   myfile.close();
 }
 
-int EMM::heuristicScore(Board *b) {
+int EMM::heuristicScore(const BoardPtr& b) {
   int heuristicScore = 0;
 
   /*
@@ -244,7 +241,7 @@ int EMM::heuristicScore(Board *b) {
 }
 
 float EMM::bestMove(
-        Board *b,
+        const BoardPtr& b,
         const Tile& nextTile,
         int depth,
         int* source,
@@ -278,7 +275,7 @@ float EMM::bestMove(
 
     if (badTile && isCorner) continue;
 
-    Board* nextBoard = b->move(s, d, nextTile);
+    auto nextBoard = b->move(s, d, nextTile);
     float score = EMM::expectiminimax(nextBoard, depth-1);
 
     if (score > bestScore) {
@@ -286,8 +283,6 @@ float EMM::bestMove(
       chosenDest = d;
       bestScore = score;
     }
-
-    delete nextBoard;
   }
 
   *source = chosenSource;
@@ -300,7 +295,7 @@ float EMM::bestMove(
   }
 }
 
-float EMM::expectiminimax(Board* board, int depth) {
+float EMM::expectiminimax(const BoardPtr& board, int depth) {
   if (depth == 0 || board->isBankrupt()) return EMM::heuristicScore(board);
 
   int j = 0;
@@ -329,7 +324,7 @@ float EMM::expectiminimax(Board* board, int depth) {
 }
 
 int EMM::rolloutOnce(int depth) {
-  Board *b = new Board();
+  BoardPtr b = std::make_shared<Board>();
 
   while (true) {
     int dist = 10;
@@ -349,7 +344,6 @@ int EMM::rolloutOnce(int depth) {
   int score = b->score;
   std::cout << "\nScore: " << b->score << ", Cash: " << b->cash << '\n';
 
-  delete b;
   return score;
 }
 
