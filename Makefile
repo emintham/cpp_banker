@@ -1,8 +1,18 @@
-banker:
-	clang++ -std=c++14 -O3 -Wall -g banker.cpp board.cpp emm.cpp -o banker
+.PHONY: clean
 
-rollout:
-	clang++ -std=c++14 -O3 -Wall -g rollout.cpp board.cpp emm.cpp -o rollout
+CC = clang++
+CFLAGS = -std=c++14 -O3 -Wall -g
 
-tests:
-	clang++ -std=c++14 -Wall test_main.cpp test_board.cpp board.cpp -o test
+SRCS = board.cpp emm.cpp
+
+banker: $(SRCS) banker.cpp
+	$(CC) $(CFLAGS) $(SRCS) banker.cpp -o $@
+
+rollout: $(SRCS) rollout.cpp
+	$(CC) $(CFLAGS) $(SRCS) rollout.cpp -o $@
+
+test: board.cpp test_main.cpp test_board.cpp
+	$(CC) $(CFLAGS) board.cpp test_board.cpp test_main.cpp -o $@
+
+clean:
+	$(RM) banker rollout test

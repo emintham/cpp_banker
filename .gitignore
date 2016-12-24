@@ -2,10 +2,11 @@ banker
 banker.dSYM
 rollout
 rollout.dSYM
+test
+test.dSYM
 callgrind*
 *.swp
 *.swo
 *.o
 tiles.txt
-test
 input
