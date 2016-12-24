@@ -15,4 +15,4 @@ test: board.cpp test_main.cpp test_board.cpp
 	$(CC) $(CFLAGS) board.cpp test_board.cpp test_main.cpp -o $@
 
 clean:
-	$(RM) banker rollout test
+	$(RM) banker rollout test callgrind.out.*
