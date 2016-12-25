@@ -1,11 +1,16 @@
+*.dSYM
+
 banker
 rollout
 test
 performanceTest
-*.dSYM
+benchmarks
+
 callgrind*
+
 *.swp
 *.swo
 *.o
+
 tiles.txt
 input
