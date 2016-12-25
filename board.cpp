@@ -129,10 +129,11 @@ std::vector<std::tuple<int, int, int>> Board::getMoveset() const {
         continue;
       }
 
-      bool walk = dist == 1 && (this->isEmpty(dest) || board[src] == board[dest] || this->isLawsuit(dest));
-      bool jump = dist != 1 && board[src] == board[dest];
+      if (this->isCompetitor(dest) || this->isNonProfit(dest)) continue;
 
-      if (!this->isNonProfit(dest) && (walk || jump)) {
+      if (board[src] == board[dest]) {
+        allPossibleMoves.push_back(std::make_tuple(src, dest, dist));
+      } else if (dist == 1 && (this->isEmpty(dest) || this->isLawsuit(dest))) {
         allPossibleMoves.push_back(std::make_tuple(src, dest, dist));
       }
     }
