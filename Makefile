@@ -5,22 +5,23 @@ CFLAGS = -std=c++14 -O3 -Wall -pedantic -g
 BENCHMARK_INCLUDE = -lbenchmark
 
 SRCS = board.cpp emm.cpp
+TEST_SRCS = test_board.cpp
 TARGETS = banker rollout test performanceTest benchmarks
 
-banker: $(SRCS) banker.cpp
-	$(CC) $(CFLAGS) $(SRCS) banker.cpp -o $@
+banker: banker.cpp $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) $< -o $@
 
-rollout: $(SRCS) rollout.cpp
-	$(CC) $(CFLAGS) $(SRCS) rollout.cpp -o $@
+rollout: rollout.cpp $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) $< -o $@
 
-test: board.cpp test_main.cpp test_board.cpp
-	$(CC) $(CFLAGS) board.cpp test_board.cpp test_main.cpp -o $@
+test: test_main.cpp board.cpp $(TEST_SRCS)
+	$(CC) $(CFLAGS) $^ -o $@
 
-performanceTest: $(SRCS) performanceTest.cpp
-	$(CC) $(CFLAGS) $(SRCS) performanceTest.cpp -o $@
+performanceTest: performanceTest.cpp $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) $< -o $@
 
-benchmarks: board.cpp
-	$(CC) $(CFLAGS) board.cpp benchmarks.cpp -o $@ $(BENCHMARK_INCLUDE)
+benchmarks: benchmarks.cpp board.cpp
+	$(CC) $(CFLAGS) $^ -o $@ $(BENCHMARK_INCLUDE)
 
 clean:
 	$(RM) $(TARGETS) callgrind.out.*
