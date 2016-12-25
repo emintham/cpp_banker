@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <memory>
 
 #include <time.h>
 
@@ -25,6 +26,8 @@ int main(int argc, const char* argv[]) {
 
   int dist;
   BoardPtr b = std::make_shared<Board>();
+  std::shared_ptr<EMM> emm = std::make_shared<EMM>();
+  emm->countLeafNodes = true;
 
   if (argc == 2) {
     depth = std::stoi(argv[1]);
@@ -40,13 +43,13 @@ int main(int argc, const char* argv[]) {
 
   clock_t t = clock();  // Start recording
 
-  EMM::solveBestMove(b, Tile(5, competitor), depth, &dist, false);
+  emm->solveBestMove(b, Tile(5, competitor), depth, &dist, false);
 
   t = clock() - t;      // End recording
 
   // Print numbers nicely with commas
   std::cout << "Explored to a depth of " << depth;
-  std::cout << ", nodes = " << formatWithCommas(EMM::leafNodesExplored) << '\n';
+  std::cout << ", nodes = " << formatWithCommas(emm->leafNodesExplored) << '\n';
   std::cout << "Took " << ((float)t)/CLOCKS_PER_SEC << " secs" << "\n\n";
 
   return 0;

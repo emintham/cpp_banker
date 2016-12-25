@@ -14,12 +14,6 @@
 #include "emm.h"
 #include "tile.h"
 
-// Initialize static member variables
-int EMM::reusedValues = 0;
-bool EMM::markReuse = true;
-unsigned long EMM::leafNodesExplored = 0;
-
-
 // Cache for reused heuristic values
 typedef std::map<int, int> HeuristicCache;
 static HeuristicCache hc;
@@ -44,7 +38,7 @@ BoardPtr EMM::solveBestMove(
   clock_t t = clock();  // Start recording
 
   int source, dest;
-  EMM::bestMove(b, nextTile, depth, &source, &dest);
+  this->bestMove(b, nextTile, depth, &source, &dest);
 
   if (source < 0 || dest < 0) {
     cout << "Failed!\n";
@@ -77,7 +71,7 @@ BoardPtr EMM::solveBestMove(
         const Tile& nextTile,
         int depth,
         int* dist) {
-  return EMM::solveBestMove(b, nextTile, depth, dist, true);
+  return this->solveBestMove(b, nextTile, depth, dist, true);
 }
 
 BoardPtr EMM::handleLawsuit(
@@ -95,7 +89,7 @@ BoardPtr EMM::handleLawsuit(
   tileFile << c << ' ' << b->score << '\n';
 
   do {
-    newBoard = EMM::solveBestMove(newBoard, tile, depth, &dist);
+    newBoard = this->solveBestMove(newBoard, tile, depth, &dist);
   } while (dist > 1);
 
   return newBoard;
@@ -130,7 +124,7 @@ BoardPtr EMM::handleNonProfit(
   tileFile << '.' << nonProfitValue << ' ' << b->score << '\n';
 
   do {
-    newBoard = EMM::solveBestMove(newBoard, Tile(nonProfitValue, nonProfit), depth, &dist);
+    newBoard = this->solveBestMove(newBoard, Tile(nonProfitValue, nonProfit), depth, &dist);
   } while (dist > 1);
 
   return newBoard;
@@ -167,15 +161,13 @@ BoardPtr EMM::handleTile(
   }
 
   do {
-    newBoard = EMM::solveBestMove(newBoard, t, depth, &dist);
+    newBoard = this->solveBestMove(newBoard, t, depth, &dist);
   } while (dist > 1);
 
   return newBoard;
 }
 
-void EMM::commandParser() {
-  const int depth = 6;
-
+void EMM::commandParser(int depth) {
   std::ofstream myfile ("tiles.txt", std::ios_base::app);
   std::string line;
 
@@ -189,11 +181,11 @@ void EMM::commandParser() {
 
     switch (c) {
       case '$': {
-        b = EMM::handleBonus(iss, myfile, b, depth);
+        b = this->handleBonus(iss, myfile, b, depth);
         break;
       }
       case '!': {
-        b = EMM::handleLawsuit(iss, myfile, b, depth);
+        b = this->handleLawsuit(iss, myfile, b, depth);
         break;
       }
       case 'p': {
@@ -201,16 +193,16 @@ void EMM::commandParser() {
         break;
       }
       case '.': {
-        b = EMM::handleNonProfit(iss, myfile, b, depth);
+        b = this->handleNonProfit(iss, myfile, b, depth);
         break;
       }
       case 'd': {
-        EMM::handleDebug(iss, myfile, b);
+        this->handleDebug(iss, myfile, b);
         break;
       }
       default: {
         const int nextTile = stoi(line);
-        b = EMM::handleTile(nextTile, myfile, b, depth);
+        b = this->handleTile(nextTile, myfile, b, depth);
         break;
       }
     }
@@ -252,8 +244,8 @@ float EMM::bestMove(
   *dest = -1;
 
   if (depth == 0 || b->isBankrupt()) {
-    leafNodesExplored++;
-    return EMM::heuristicScore(b);
+    if (countLeafNodes) leafNodesExplored++;
+    return this->heuristicScore(b);
   }
 
   int chosenSource = -1;
@@ -262,11 +254,11 @@ float EMM::bestMove(
   const bool isNonProfit = nextTile.tileType == nonProfit;
   const bool isCompetitor = nextTile.tileType == competitor;
 
-  auto allPossibleMoves = b->getMoveset();
+  const auto allPossibleMoves = b->getMoveset();
 
   if (allPossibleMoves.empty()) {
-    leafNodesExplored++;
-    return EMM::heuristicScore(b);
+    if (countLeafNodes) leafNodesExplored++;
+    return this->heuristicScore(b);
   }
 
   for (auto &move : allPossibleMoves) {
@@ -281,7 +273,7 @@ float EMM::bestMove(
     if (badTile && isCorner) continue;
 
     auto nextBoard = b->move(s, d, nextTile);
-    float score = EMM::expectiminimax(nextBoard, depth-1);
+    float score = this->expectiminimax(nextBoard, depth-1);
 
     if (score > bestScore) {
       chosenSource = s;
@@ -294,8 +286,8 @@ float EMM::bestMove(
   *dest = chosenDest;
 
   if (chosenSource < 0) {
-    leafNodesExplored++;
-    return EMM::heuristicScore(b);
+    if (countLeafNodes) leafNodesExplored++;
+    return this->heuristicScore(b);
   } else {
     return bestScore;
   }
@@ -303,8 +295,8 @@ float EMM::bestMove(
 
 float EMM::expectiminimax(const BoardPtr& board, int depth) {
   if (depth == 0 || board->isBankrupt()) {
-    leafNodesExplored++;
-    return EMM::heuristicScore(board);
+    if (countLeafNodes) leafNodesExplored++;
+    return this->heuristicScore(board);
   }
 
   int j = 0;
@@ -324,7 +316,7 @@ float EMM::expectiminimax(const BoardPtr& board, int depth) {
     const Tile tile = TILES[i];
     const float probability = DISTRIBUTION[j][i];
 
-    float heuristicScore = EMM::bestMove(board, tile, depth-1, &source, &dest);
+    float heuristicScore = this->bestMove(board, tile, depth-1, &source, &dest);
 
     expectedMaxScore += heuristicScore * probability;
   }
@@ -340,7 +332,7 @@ int EMM::rolloutOnce(int depth) {
     const Tile newTile = Board::getRandomTile(b->score);
 
     do {
-      b = EMM::solveBestMove(b, newTile, depth, &dist, false);
+      b = this->solveBestMove(b, newTile, depth, &dist, false);
       // std::cout << '.';
 
       if (!b) return 0;
@@ -356,13 +348,12 @@ int EMM::rolloutOnce(int depth) {
   return score;
 }
 
-void EMM::rollout() {
+void EMM::rollout(int depth) {
   const int numRollouts = 6;
-  const int depth = 6;
 
   srand(time(0));
 
   for (int i=0; i<numRollouts; i++) {
-    EMM::rolloutOnce(depth);
+    this->rolloutOnce(depth);
   }
 }

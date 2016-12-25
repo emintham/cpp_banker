@@ -66,8 +66,7 @@ void Board::printCompetitorTimers() const {
 }
 
 bool Board::isEmpty(int position) const {
-  return !board[position].value && !this->isCompetitor(position) && \
-      !this->isLawsuit(position);
+  return board[position] == Tile();
 }
 
 bool Board::isCompetitor(int position) const {
