@@ -261,19 +261,19 @@ float EMM::bestMove(
     return this->heuristicScore(b);
   }
 
-  for (auto &move : allPossibleMoves) {
+  for (const auto &move : allPossibleMoves) {
     int s, d, dist;
     std::tie(s, d, dist) = move;
 
     // Do not recommend moves where the competitor or nonProfit ends up in the
     // corner
     const bool badTile = isNonProfit || isCompetitor;
-    bool isCorner = s == 0 || s == 4 || s == 20 || s == 24;
+    const bool isCorner = s == 0 || s == 4 || s == 20 || s == 24;
 
     if (badTile && isCorner) continue;
 
     auto nextBoard = b->move(s, d, nextTile);
-    float score = this->expectiminimax(nextBoard, depth-1);
+    const float score = this->expectiminimax(nextBoard, depth-1);
 
     if (score > bestScore) {
       chosenSource = s;
@@ -299,24 +299,16 @@ float EMM::expectiminimax(const BoardPtr& board, int depth) {
     return this->heuristicScore(board);
   }
 
-  int j = 0;
-
-  if (board->score <= 300) {
-    // Do nothing
-  } else if (board->score <= 500) {
-    j = 1;
-  } else {
-    j = 2;
-  }
+  const int distribRow = std::min(board->score/100, PROBABILITY_INTERVALS-1);
 
   float expectedMaxScore = 0.0;
   for (int i=0; i<TILE_TYPES; i++) {
     int source, dest;
 
     const Tile tile = TILES[i];
-    const float probability = DISTRIBUTION[j][i];
+    const float probability = DISTRIBUTION[distribRow][i];
 
-    float heuristicScore = this->bestMove(board, tile, depth-1, &source, &dest);
+    const float heuristicScore = this->bestMove(board, tile, depth-1, &source, &dest);
 
     expectedMaxScore += heuristicScore * probability;
   }
