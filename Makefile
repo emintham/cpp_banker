@@ -4,11 +4,20 @@ CC = clang++
 CFLAGS = -std=c++14 -O3 -Wall -pedantic -g
 BENCHMARK_INCLUDE = -lbenchmark
 
+DEBUG ?= 0
+
+ifeq ($(DEBUG), 1)
+	CFLAGS += -DDEBUG
+endif
+
 SRCS = board.cpp emm.cpp
 TEST_SRCS = test_board.cpp
-TARGETS = banker rollout test performanceTest benchmarks
+TARGETS = banker rollout test performanceTest benchmarks solver
 
 banker: banker.cpp $(SRCS)
+	$(CC) $(CFLAGS) $(SRCS) $< -o $@
+
+solver: solver.cpp $(SRCS)
 	$(CC) $(CFLAGS) $(SRCS) $< -o $@
 
 rollout: rollout.cpp $(SRCS)

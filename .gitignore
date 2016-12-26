@@ -5,6 +5,7 @@ rollout
 test
 performanceTest
 benchmarks
+solver
 
 callgrind*
 

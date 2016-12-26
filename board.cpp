@@ -345,7 +345,9 @@ const Tile Board::getRandomTile(int score) {
   }
 
   if (tileIndex >= TILE_TYPES) {
+#ifdef DEBUG
     cout << "DEBUG: tileIndex = " << tileIndex << '\n';
+#endif
     return Tile(1);
   }
 
