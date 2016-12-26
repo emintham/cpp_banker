@@ -23,7 +23,7 @@ void report(const BoardPtr& b, const Tile& tile) {
     int s, d, dist;
     std::tie(s, d, dist) = move;
 
-    cout << '(' << s << ',' << d << ") ";
+    cout << s << ',' << d << ' ';
   }
   cout << '\n';
 
@@ -41,6 +41,8 @@ void bankerLoop(const bool interactive) {
     do {
       report(b, randomTile);
       if (scanf("%d %d", &src, &dst) == EOF) return;
+
+      b = b->move(src, dst, randomTile);
 
       const int diff = abs(src-dst);
       dist = diff/5 + diff%5;
