@@ -50,7 +50,7 @@ const int TILE_TYPES = 10;
 const Tile TILES[TILE_TYPES] = {
   Tile(2),
   Tile(1),
-  Tile(0),
+  Tile(0, competitor),
   Tile(1, competitor),
   Tile(2, competitor),
   Tile(3, competitor),
